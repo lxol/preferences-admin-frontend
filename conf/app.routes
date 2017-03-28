@@ -1,3 +1,4 @@
 # microservice specific routes
 
-GET        /hello-world             uk.gov.hmrc.preferencesadminfrontend.controllers.HelloWorld.helloWorld
+GET        /login        @uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
+GET        /             @uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
