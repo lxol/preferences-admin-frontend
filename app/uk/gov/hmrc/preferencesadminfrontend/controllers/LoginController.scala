@@ -16,15 +16,19 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
+import javax.inject.Inject
+
 import play.api.Play.current
 import play.api.i18n.Messages.Implicits._
 import play.api.mvc._
 import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 
 import scala.concurrent.Future
 
 
-class LoginController extends FrontendController {
+class LoginController @Inject()(loginService: LoginService) extends FrontendController {
+
   val login = Action.async { implicit request =>
 		Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login()))
   }

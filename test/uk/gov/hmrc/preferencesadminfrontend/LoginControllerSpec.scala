@@ -19,18 +19,16 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 import play.api.http.Status
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import play.api.http._
-import play.api.test.FakeRequest
-import play.api.test.Helpers._
-import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.play.test.{WithFakeApplication, UnitSpec}
+import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
+import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 
 
-class LoginControllerSpec extends UnitSpec with WithFakeApplication{
+class LoginControllerSpec extends UnitSpec with WithFakeApplication {
 
   val fakeRequest = FakeRequest("GET", "/")
 
-  val loginController = new LoginController {}
+  val loginController = new LoginController(new LoginService(Seq(User("username", "password"))))
 
   "GET /" should {
     "return 200" in {
@@ -43,9 +41,5 @@ class LoginControllerSpec extends UnitSpec with WithFakeApplication{
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
     }
-
-
   }
-
-
 }
