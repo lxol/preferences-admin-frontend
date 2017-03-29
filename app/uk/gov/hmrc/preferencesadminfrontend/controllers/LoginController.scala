@@ -33,19 +33,19 @@ import scala.concurrent.Future
 class LoginController @Inject()(loginService: LoginService) extends FrontendController {
 
   val showLoginPage = Action.async { implicit request =>
-		Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
+    Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
   }
 
   val login = Action.async { implicit request =>
-    println("=== I'm here ===")
     userForm.bindFromRequest.fold(
       formWithErrors => {
-        // binding failure, you retrieve the form containing errors:
         Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors)))
       },
       userData => {
-        /* binding success, you get the actual value. */
-        Future.successful(Redirect(routes.LoginController.showLoginPage()))
+        if (loginService.login(userData))
+          Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification()))
+        else
+          Future.successful(Unauthorized(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
       }
     )
   }

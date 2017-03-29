@@ -32,5 +32,5 @@ class LoginService(authorisedUsers: Seq[User]) {
     authorisedUsers
   } // Configuration => Seq[User]
 
-  def login(user: User) = authorisedUsers.contains(user)
+  def login(user: User)  = authorisedUsers.contains(user)
 }
