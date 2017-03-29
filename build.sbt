@@ -1,0 +1,1 @@
+routesGenerator := InjectedRoutesGenerator

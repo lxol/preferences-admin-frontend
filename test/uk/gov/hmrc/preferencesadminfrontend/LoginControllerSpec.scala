@@ -32,12 +32,12 @@ class LoginControllerSpec extends UnitSpec with WithFakeApplication {
 
   "GET /" should {
     "return 200" in {
-      val result = loginController.login(fakeRequest)
+      val result = loginController.showLoginPage(fakeRequest)
       status(result) shouldBe Status.OK
     }
 
     "return HTML" in {
-      val result = loginController.login(fakeRequest)
+      val result = loginController.showLoginPage(fakeRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
     }

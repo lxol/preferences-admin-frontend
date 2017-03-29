@@ -16,20 +16,44 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 
 import play.api.Play.current
+import play.api.data.Form
+import play.api.data.Forms.{mapping, _}
 import play.api.i18n.Messages.Implicits._
 import play.api.mvc._
 import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 
 import scala.concurrent.Future
 
-
+@Singleton
 class LoginController @Inject()(loginService: LoginService) extends FrontendController {
 
-  val login = Action.async { implicit request =>
-		Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login()))
+  val showLoginPage = Action.async { implicit request =>
+		Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
   }
+
+  val login = Action.async { implicit request =>
+    println("=== I'm here ===")
+    userForm.bindFromRequest.fold(
+      formWithErrors => {
+        // binding failure, you retrieve the form containing errors:
+        Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors)))
+      },
+      userData => {
+        /* binding success, you get the actual value. */
+        Future.successful(Redirect(routes.LoginController.showLoginPage()))
+      }
+    )
+  }
+
+  val userForm = Form(
+    mapping(
+      "username" -> text,
+      "password" -> text
+    )(User.apply)(User.unapply)
+  )
 }
