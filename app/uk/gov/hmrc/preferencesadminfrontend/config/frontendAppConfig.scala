@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.config
 
-import play.api.Play.{configuration, current}
+import javax.inject.{Inject, Singleton}
+
+import com.google.inject.ImplementedBy
+import play.api.Configuration
 import uk.gov.hmrc.play.config.ServicesConfig
 
+@ImplementedBy(classOf[FrontendAppConfig])
 trait AppConfig {
   val analyticsToken: String
   val analyticsHost: String
@@ -26,7 +30,7 @@ trait AppConfig {
   val reportAProblemNonJSUrl: String
 }
 
-object FrontendAppConfig extends AppConfig with ServicesConfig {
+class FrontendAppConfig @Inject()(configuration: Configuration) extends AppConfig with ServicesConfig {
 
   private def loadConfig(key: String) = configuration.getString(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
 

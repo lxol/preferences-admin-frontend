@@ -22,15 +22,17 @@ import com.typesafe.config.ConfigException.Missing
 import play.api.Configuration
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
-class LoginService(authorisedUsers: Seq[User]) {
+class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
 
-  @Inject
-  def this(configuration: Configuration) = this{
+  def login(user: User)  = loginServiceConfig.authorisedUsers.contains(user)
+}
+
+class LoginServiceConfiguration @Inject()(configuration: Configuration) {
+
+  lazy val authorisedUsers: Seq[User] = {
     val username = configuration.getString("username").getOrElse(throw new Missing("Property username missing"))
     val password = configuration.getString("password").getOrElse(throw new Missing("Property password missing"))
     val authorisedUsers: Seq[User] = Seq(User(username, password))
     authorisedUsers
-  } // Configuration => Seq[User]
-
-  def login(user: User)  = authorisedUsers.contains(user)
+  }
 }

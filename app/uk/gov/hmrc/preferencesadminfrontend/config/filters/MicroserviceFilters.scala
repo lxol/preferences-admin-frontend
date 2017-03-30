@@ -1,4 +1,4 @@
-@*
+/*
  * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *@
+ */
 
-@import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
-@(pageTitle: String, heading: String, message: String)(implicit request: Request[_], messages: Messages)
+package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
-@contentHeader = {
-  <h1>@heading</h1>
-}
+import com.google.inject.Inject
+import com.kenshoo.play.metrics.MetricsFilter
+import play.api.http.DefaultHttpFilters
+import uk.gov.hmrc.play.filters.{NoCacheFilter, RecoveryFilter}
 
-@mainContent = {
-  <p>@message</p>
-}
+class MicroserviceFilters @Inject()(
+  metricsFilter: MetricsFilter,
+  auditFilter: MicroserviceAuditFilter,
+  loggingFilter: MicroserviceLoggingFilter
+) extends DefaultHttpFilters(
+  metricsFilter,
+  auditFilter,
+  loggingFilter,
+  NoCacheFilter,
+  RecoveryFilter
+)

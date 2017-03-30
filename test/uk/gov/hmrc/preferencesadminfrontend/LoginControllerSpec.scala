@@ -16,30 +16,82 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
-import play.api.http.Status
+import org.scalatest.Matchers._
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Configuration
+import play.api.http._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
+import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
+import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
+import views.html.helper.CSRF
 
-
-class LoginControllerSpec extends UnitSpec with WithFakeApplication {
-
-  val fakeRequest = FakeRequest("GET", "/")
-
-  val loginController = new LoginController(new LoginService(Seq(User("username", "password"))))
+class LoginControllerSpec
+  extends PlaySpec
+    with GuiceOneAppPerSuite
+    with ScalaFutures
+    with MockitoSugar
+    with LoginControllerFixtures
+    with CSRFTest {
 
   "GET /" should {
     "return 200" in {
-      val result = loginController.showLoginPage(fakeRequest)
+      val result = loginController.showLoginPage(addToken(FakeRequest("GET", "/")))
       status(result) shouldBe Status.OK
     }
 
     "return HTML" in {
-      val result = loginController.showLoginPage(fakeRequest)
+      val result = loginController.showLoginPage(addToken(FakeRequest("GET", "/")))
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
     }
   }
+
+  "POST to login" should {
+    "Return the next page if credentials are correct" in {
+      val result = loginController.login(
+        addToken(FakeRequest()).withFormUrlEncodedBody(
+          "username" -> "usernameTest",
+          "password" -> "passwordTest"
+        )
+      )
+
+      result.futureValue.header.status shouldBe Status.OK
+    }
+  }
+
+//  override def fakeApplication(): Application =  new GuiceApplicationBuilder()
+//    .in(Mode.Test)
+//    .bindings(
+//      bind[FileMimeTypes].toInstance(mock[FileMimeTypes]),
+//      bind[PlayBodyParsers].toInstance(mock[PlayBodyParsers]),
+//      bind[JavaContextComponents].to[DefaultJavaContextComponents],
+//      bind[AsyncHttpClient].to[DefaultAsyncHttpClient]
+//    )
+//    .build
+}
+
+trait LoginControllerFixtures extends MockitoSugar  {
+
+  implicit val appConfig = mock[FrontendAppConfig]
+
+//  val application = new GuiceApplicationBuilder()
+//    .in(Mode.Test)
+//    .bindings(
+//      bind[FileMimeTypes].toInstance(mock[FileMimeTypes]),
+//      bind[PlayBodyParsers].toInstance(mock[PlayBodyParsers]),
+//      bind[JavaContextComponents].to[DefaultJavaContextComponents],
+//      bind[AsyncHttpClient].to[DefaultAsyncHttpClient]
+//    )
+//    .build
+
+  val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration]){
+    override lazy val authorisedUsers: Seq[User] = Seq(User("usernameTest", "passwordTest"))
+  }
+  val loginController = new LoginController(new LoginService(loginServiceConfiguration))
 }

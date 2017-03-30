@@ -24,13 +24,14 @@ import play.api.data.Forms.{mapping, _}
 import play.api.i18n.Messages.Implicits._
 import play.api.mvc._
 import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 
 import scala.concurrent.Future
 
 @Singleton
-class LoginController @Inject()(loginService: LoginService) extends FrontendController {
+class LoginController @Inject()(loginService: LoginService)(implicit appConfig: AppConfig) extends FrontendController {
 
   val showLoginPage = Action.async { implicit request =>
     Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))

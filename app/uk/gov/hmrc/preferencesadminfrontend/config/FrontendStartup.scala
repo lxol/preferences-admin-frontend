@@ -1,4 +1,4 @@
-@*
+/*
  * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *@
+ */
 
-@import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
-@(pageTitle: String, heading: String, message: String)(implicit request: Request[_], messages: Messages)
+package uk.gov.hmrc.preferencesadminfrontend.config
 
-@contentHeader = {
-  <h1>@heading</h1>
+import javax.inject.Inject
+
+import com.google.inject.ImplementedBy
+import play.api.{Application, Logger}
+
+@ImplementedBy(classOf[DefaultFrontendStartup])
+trait FrontendStartup {
+  val app: Application
+  val appName: String
 }
 
-@mainContent = {
-  <p>@message</p>
+class DefaultFrontendStartup @Inject()(val app: Application) extends FrontendStartup {
+  override lazy val appName: String = app.configuration.getString("appName").getOrElse("APP NAME NOT SET")
+
+  Logger.info(s"Starting frontend : $appName : in mode : ${app.mode}")
 }
