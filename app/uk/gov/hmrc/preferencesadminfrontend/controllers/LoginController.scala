@@ -39,9 +39,7 @@ class LoginController @Inject()(loginService: LoginService)(implicit appConfig: 
 
   val login = Action.async { implicit request =>
     userForm.bindFromRequest.fold(
-      formWithErrors => {
-        Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors)))
-      },
+      formWithErrors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors))),
       userData => {
         if (loginService.login(userData))
           Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification()))

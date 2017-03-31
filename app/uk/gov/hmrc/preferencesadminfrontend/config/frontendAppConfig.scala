@@ -16,13 +16,11 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.config
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 
-import com.google.inject.ImplementedBy
 import play.api.Configuration
 import uk.gov.hmrc.play.config.ServicesConfig
 
-@ImplementedBy(classOf[FrontendAppConfig])
 trait AppConfig {
   val analyticsToken: String
   val analyticsHost: String

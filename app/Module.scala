@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
-
 import com.google.inject.AbstractModule
 import play.api.{Logger, LoggerLike}
-import uk.gov.hmrc.preferencesadminfrontend.config.{DefaultFrontendStartup, FrontendStartup}
+import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig}
 
 class Module extends AbstractModule {
 
   override def configure(): Unit = {
-    bind(classOf[FrontendStartup])
-      .to(classOf[DefaultFrontendStartup])
-      .asEagerSingleton()
-//
-//    bind(classOf[AppConfig])
-//    .to(classOf[FrontendAppConfig])
-//    .asEagerSingleton()
+
+    bind(classOf[AppConfig])
+    .to(classOf[FrontendAppConfig])
+    .asEagerSingleton()
 
     bind(classOf[LoggerLike]) toInstance Logger
 
