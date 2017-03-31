@@ -25,17 +25,16 @@ import play.api.Configuration
 import play.api.http._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import org.mockito.Mockito._
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
-import views.html.helper.CSRF
 
 class LoginControllerSpec
   extends PlaySpec
     with GuiceOneAppPerSuite
     with ScalaFutures
-    with MockitoSugar
     with LoginControllerFixtures
     with CSRFTest {
 
@@ -63,32 +62,34 @@ class LoginControllerSpec
 
       result.futureValue.header.status shouldBe Status.OK
     }
-  }
 
-//  override def fakeApplication(): Application =  new GuiceApplicationBuilder()
-//    .in(Mode.Test)
-//    .bindings(
-//      bind[FileMimeTypes].toInstance(mock[FileMimeTypes]),
-//      bind[PlayBodyParsers].toInstance(mock[PlayBodyParsers]),
-//      bind[JavaContextComponents].to[DefaultJavaContextComponents],
-//      bind[AsyncHttpClient].to[DefaultAsyncHttpClient]
-//    )
-//    .build
+    "Return unauthorised if credentials are not correct" in {
+      val result = loginController.login(
+        addToken(FakeRequest()).withFormUrlEncodedBody(
+          "username" -> "usernameTest",
+          "password" -> "wrongPassword"
+        )
+      )
+
+      result.futureValue.header.status shouldBe Status.UNAUTHORIZED
+    }
+
+    "Return bad request if credentials are missing" in {
+      val result = loginController.login(
+        addToken(FakeRequest()).withFormUrlEncodedBody()
+      )
+
+      result.futureValue.header.status shouldBe Status.BAD_REQUEST
+    }
+  }
 }
 
 trait LoginControllerFixtures extends MockitoSugar  {
 
   implicit val appConfig = mock[FrontendAppConfig]
 
-//  val application = new GuiceApplicationBuilder()
-//    .in(Mode.Test)
-//    .bindings(
-//      bind[FileMimeTypes].toInstance(mock[FileMimeTypes]),
-//      bind[PlayBodyParsers].toInstance(mock[PlayBodyParsers]),
-//      bind[JavaContextComponents].to[DefaultJavaContextComponents],
-//      bind[AsyncHttpClient].to[DefaultAsyncHttpClient]
-//    )
-//    .build
+  when(appConfig.analyticsToken).thenReturn("")
+  when(appConfig.analyticsHost).thenReturn("")
 
   val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration]){
     override lazy val authorisedUsers: Seq[User] = Seq(User("usernameTest", "passwordTest"))
