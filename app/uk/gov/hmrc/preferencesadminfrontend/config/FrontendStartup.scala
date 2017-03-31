@@ -19,18 +19,15 @@ package uk.gov.hmrc.preferencesadminfrontend.config
 import javax.inject.{Inject, Singleton}
 
 import play.api.{Application, Logger}
-import uk.gov.hmrc.crypto.ApplicationCryptoDI
+import uk.gov.hmrc.crypto.ApplicationCrypto
 
 @Singleton
-class FrontendStartup @Inject()( app: Application,
-                                        appCrypto: ApplicationCryptoDI,
-                                        graphiteConfiguration: GraphiteConfiguration
-                                      ) {
+class FrontendStartup @Inject()(app: Application, appCrypto: ApplicationCrypto, graphiteConfiguration: GraphiteConfiguration) {
 
   lazy val appName: String = app.configuration.getString("appName").getOrElse("APP NAME NOT SET")
   lazy val appMode = app.mode
 
-  if(graphiteConfiguration.enabled) graphiteConfiguration.startGraphite()
+  if (graphiteConfiguration.enabled) graphiteConfiguration.startGraphite()
 
   Logger.info(s"Starting frontend : $appName. : in mode : $appMode")
   appCrypto.verifyConfiguration()

@@ -16,6 +16,7 @@
 
 import com.google.inject.AbstractModule
 import play.api.{Logger, LoggerLike}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, ApplicationCryptoDI}
 import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig}
 
 class Module extends AbstractModule {
@@ -28,8 +29,11 @@ class Module extends AbstractModule {
 
     bind(classOf[LoggerLike]) toInstance Logger
 
-    bindServices()
+    bindLibraries()
   }
 
-  private def bindServices() {}
+  private def bindLibraries(): Unit = {
+    bind(classOf[ApplicationCrypto])
+      .to(classOf[ApplicationCryptoDI])
+  }
 }

@@ -19,16 +19,19 @@ package uk.gov.hmrc.preferencesadminfrontend.config.filters
 import com.google.inject.Inject
 import com.kenshoo.play.metrics.MetricsFilter
 import play.api.http.DefaultHttpFilters
+import play.filters.csrf.CSRFFilter
 import uk.gov.hmrc.play.filters.{NoCacheFilter, RecoveryFilter}
 
 class MicroserviceFilters @Inject()(
   metricsFilter: MetricsFilter,
   auditFilter: MicroserviceAuditFilter,
-  loggingFilter: MicroserviceLoggingFilter
+  loggingFilter: MicroserviceLoggingFilter,
+  csrfFilter: CSRFFilter
 ) extends DefaultHttpFilters(
   metricsFilter,
   auditFilter,
   loggingFilter,
+  csrfFilter,
   NoCacheFilter,
   RecoveryFilter
 )
