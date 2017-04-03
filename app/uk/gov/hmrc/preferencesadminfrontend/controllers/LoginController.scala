@@ -18,12 +18,18 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
 
+import org.joda.time.DateTime
+import play.api.{Application, Configuration, Environment}
 import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
 import play.api.i18n.Messages.Implicits._
 import play.api.mvc._
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.{AuditEvent, DataEvent}
+import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
@@ -31,7 +37,9 @@ import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 import scala.concurrent.Future
 
 @Singleton
-class LoginController @Inject()(loginService: LoginService)(implicit appConfig: AppConfig) extends FrontendController {
+class LoginController @Inject()(loginService: LoginService, configuration: Configuration)(implicit appConfig: AppConfig) extends FrontendController with AppName {
+
+  def auditConnector: AuditConnector = FrontendAuditConnector
 
   val showLoginPage = Action.async { implicit request =>
     Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
@@ -41,13 +49,24 @@ class LoginController @Inject()(loginService: LoginService)(implicit appConfig: 
     userForm.bindFromRequest.fold(
       formWithErrors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors))),
       userData => {
-        if (loginService.login(userData))
+        if (loginService.login(userData)) {
+          auditConnector.sendEvent(createLoginEvent(userData.username, true))
           Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification()))
-        else
+        }
+        else {
+          auditConnector.sendEvent(createLoginEvent(userData.username, false))
           Future.successful(Unauthorized(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
+        }
       }
     )
   }
+
+  def createLoginEvent(username: String, successful: Boolean) = DataEvent(
+    auditSource = configuration.getString("appName").getOrElse("application-name-not-found"),
+    auditType = if (successful) "TxSucceeded" else "TxFailed",
+    detail = Map("user" -> username),
+    tags = Map("transactionName" -> "Login")
+  )
 
   val userForm = Form(
     mapping(

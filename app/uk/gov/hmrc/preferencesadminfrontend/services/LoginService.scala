@@ -24,15 +24,18 @@ import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
 class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
 
-  def login(user: User)  = loginServiceConfig.authorisedUsers.contains(user)
+  def login(user: User) = loginServiceConfig.authorisedUsers.contains(user)
 }
 
 class LoginServiceConfiguration @Inject()(configuration: Configuration) {
 
   lazy val authorisedUsers: Seq[User] = {
-    val username = configuration.getString("username").getOrElse(throw new Missing("Property username missing"))
-    val password = configuration.getString("password").getOrElse(throw new Missing("Property password missing"))
-    val authorisedUsers: Seq[User] = Seq(User(username, password))
-    authorisedUsers
+    configuration.getConfigSeq("users").fold(throw new Missing("Property users missing"))(_.map {
+      userConfig: Configuration =>
+        User(
+          userConfig.getString("username").getOrElse(throw new Missing("Property username missing")),
+          userConfig.getString("password").getOrElse(throw new Missing("Property password missing"))
+        )
+    })
   }
 }
