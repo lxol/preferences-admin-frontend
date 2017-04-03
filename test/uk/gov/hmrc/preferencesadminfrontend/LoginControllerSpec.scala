@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
+import org.mockito.Mockito._
 import org.scalatest.Matchers._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -23,19 +24,16 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.api.http._
+import play.api.i18n.MessagesApi
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import org.mockito.Mockito._
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
-import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
 
 class LoginControllerSpec
-  extends PlaySpec
-    with GuiceOneAppPerSuite
+  extends LoginControllerFixtures
     with ScalaFutures
-    with LoginControllerFixtures
     with CSRFTest {
 
   "GET /" should {
@@ -55,8 +53,8 @@ class LoginControllerSpec
     "Return the next page if credentials are correct" in {
       val result = loginController.login(
         addToken(FakeRequest()).withFormUrlEncodedBody(
-          "username" -> "usernameTest",
-          "password" -> "passwordTest"
+          "username" -> "user",
+          "password" -> "pwd"
         )
       )
 
@@ -66,7 +64,7 @@ class LoginControllerSpec
     "Return unauthorised if credentials are not correct" in {
       val result = loginController.login(
         addToken(FakeRequest()).withFormUrlEncodedBody(
-          "username" -> "usernameTest",
+          "username" -> "user",
           "password" -> "wrongPassword"
         )
       )
@@ -84,15 +82,16 @@ class LoginControllerSpec
   }
 }
 
-trait LoginControllerFixtures extends MockitoSugar  {
+trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite {
 
   implicit val appConfig = mock[FrontendAppConfig]
+  implicit val messagesApi = app.injector.instanceOf[MessagesApi]
 
   when(appConfig.analyticsToken).thenReturn("")
   when(appConfig.analyticsHost).thenReturn("")
 
-  val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration]){
-    override lazy val authorisedUsers: Seq[User] = Seq(User("usernameTest", "passwordTest"))
-  }
-  val loginController = new LoginController(new LoginService(loginServiceConfiguration))
+  val playConfiguration = app.injector.instanceOf[Configuration]
+
+  val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration)
+  val loginController = new LoginController(new LoginService(loginServiceConfiguration), playConfiguration)
 }
