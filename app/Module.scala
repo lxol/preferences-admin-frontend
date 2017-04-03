@@ -17,11 +17,13 @@
 import com.google.inject.AbstractModule
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.crypto.{ApplicationCrypto, ApplicationCryptoDI}
-import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig}
+import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig, FrontendStartup}
 
 class Module extends AbstractModule {
 
   override def configure(): Unit = {
+
+    bind(classOf[FrontendStartup]).asEagerSingleton
 
     bind(classOf[AppConfig])
     .to(classOf[FrontendAppConfig])
