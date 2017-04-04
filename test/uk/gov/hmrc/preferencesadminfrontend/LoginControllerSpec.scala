@@ -50,7 +50,7 @@ class LoginControllerSpec
   }
 
   "POST to login" should {
-    "Return the next page if credentials are correct" in {
+    "Redirect to the next page if credentials are correct" in {
       val result = loginController.login(
         addToken(FakeRequest()).withFormUrlEncodedBody(
           "username" -> "user",
@@ -58,7 +58,9 @@ class LoginControllerSpec
         )
       )
 
-      result.futureValue.header.status shouldBe Status.OK
+      session(result).data should contain ("user" -> "user")
+      status(result) shouldBe Status.SEE_OTHER
+      headers(result) should contain ("Location" -> "/paperless/admin/search")
     }
 
     "Return unauthorised if credentials are not correct" in {
@@ -80,6 +82,16 @@ class LoginControllerSpec
       result.futureValue.header.status shouldBe Status.BAD_REQUEST
     }
   }
+
+  "POST to logout" should {
+    "Destroy existing session and redirect to login page" in {
+      val result = loginController.logout(addToken(FakeRequest().withSession("user" -> "user")))
+
+      session(result).data should not contain ("user" -> "user")
+      status(result) shouldBe Status.SEE_OTHER
+      headers(result) should contain ("Location" -> "/paperless/admin")
+    }
+  }
 }
 
 trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite {
@@ -93,5 +105,5 @@ trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAp
   val playConfiguration = app.injector.instanceOf[Configuration]
 
   val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration)
-  val loginController = new LoginController(new LoginService(loginServiceConfiguration), playConfiguration)
+  val loginController = new LoginController(new LoginService(loginServiceConfiguration))
 }

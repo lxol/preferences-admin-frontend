@@ -24,7 +24,7 @@ import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
 class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
 
-  def login(user: User) = loginServiceConfig.authorisedUsers.contains(user)
+  def isAuthorised(user: User): Boolean = loginServiceConfig.authorisedUsers.contains(user)
 }
 
 class LoginServiceConfiguration @Inject()(configuration: Configuration) {

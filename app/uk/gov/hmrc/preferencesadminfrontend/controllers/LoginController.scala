@@ -38,17 +38,17 @@ class LoginController @Inject()(loginService: LoginService)(implicit appConfig: 
 
   def auditConnector: AuditConnector = FrontendAuditConnector
 
-  val showLoginPage = Action.async { implicit request =>
-    Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
+  val showLoginPage = Action.async {
+    implicit request => Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
   }
 
   val login = Action.async { implicit request =>
     userForm.bindFromRequest.fold(
       formWithErrors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors))),
       userData => {
-        if (loginService.login(userData)) {
+        if (loginService.isAuthorised(userData)) {
           auditConnector.sendEvent(createLoginEvent(userData.username, true))
-          Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification()))
+          Future.successful(Redirect(routes.SearchController.showSearchPage.url).withSession(request.session + ("user" -> userData.username)))
         }
         else {
           auditConnector.sendEvent(createLoginEvent(userData.username, false))
@@ -58,11 +58,23 @@ class LoginController @Inject()(loginService: LoginService)(implicit appConfig: 
     )
   }
 
+  val logout = Action.async { implicit request =>
+    auditConnector.sendEvent(createLogoutEvent(request.session.get("user").get))
+    Future.successful(Redirect(routes.LoginController.showLoginPage().url).withSession(new Session()))
+  }
+
   def createLoginEvent(username: String, successful: Boolean) = DataEvent(
     auditSource = appName,
     auditType = if (successful) "TxSucceeded" else "TxFailed",
     detail = Map("user" -> username),
     tags = Map("transactionName" -> "Login")
+  )
+
+  def createLogoutEvent(username: String) = DataEvent(
+    auditSource = appName,
+    auditType = "TxSucceeded",
+    detail = Map("user" -> username),
+    tags = Map("transactionName" -> "Logout")
   )
 
   val userForm = Form(

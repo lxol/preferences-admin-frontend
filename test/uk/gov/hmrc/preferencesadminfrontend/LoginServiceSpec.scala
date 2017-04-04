@@ -29,7 +29,7 @@ class LoginServiceSpec extends UnitSpec with LoginServiceFixtures {
       lazy val loginService = new LoginService(loginServiceConfiguration)
       val user = new User("username", "password")
 
-      loginService.login(user) shouldBe true
+      loginService.isAuthorised(user) shouldBe true
     }
   }
 

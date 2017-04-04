@@ -26,12 +26,14 @@ class MicroserviceFilters @Inject()(
   metricsFilter: MetricsFilter,
   auditFilter: MicroserviceAuditFilter,
   loggingFilter: MicroserviceLoggingFilter,
-  csrfFilter: CSRFFilter
+  csrfFilter: CSRFFilter,
+  authFilter: AuthFilter
 ) extends DefaultHttpFilters(
   metricsFilter,
   auditFilter,
   loggingFilter,
   csrfFilter,
+  authFilter,
   NoCacheFilter,
   RecoveryFilter
 )
