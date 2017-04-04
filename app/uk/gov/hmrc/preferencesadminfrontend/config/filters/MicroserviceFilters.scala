@@ -16,12 +16,15 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
+import javax.inject.Singleton
+
 import com.google.inject.Inject
 import com.kenshoo.play.metrics.MetricsFilter
 import play.api.http.DefaultHttpFilters
 import play.filters.csrf.CSRFFilter
 import uk.gov.hmrc.play.filters.{NoCacheFilter, RecoveryFilter}
 
+@Singleton
 class MicroserviceFilters @Inject()(
   metricsFilter: MetricsFilter,
   auditFilter: MicroserviceAuditFilter,

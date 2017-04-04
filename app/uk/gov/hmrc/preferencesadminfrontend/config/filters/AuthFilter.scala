@@ -20,27 +20,53 @@ import javax.inject.{Inject, Singleton}
 
 import akka.stream.Materializer
 import play.api.mvc.{Filter, RequestHeader, Result, Session}
-import uk.gov.hmrc.preferencesadminfrontend.controllers.{LoginController, routes}
+import uk.gov.hmrc.play.http.SessionKeys
+import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
+import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AuthFilter @Inject()(implicit val mat: Materializer, ec: ExecutionContext) extends Filter {
 
+  import AuthFilter._
+
   val accessRestrictedPaths = Seq(
     routes.SearchController.showSearchPage().url,
     routes.LoginController.logout().url
   )
 
-  override def apply(nextFilter: (RequestHeader) => Future[Result])(requestHeader: RequestHeader): Future[Result] = {
-    if (accessRestrictedPaths contains requestHeader.path) {
-      if (!userDefinedIn(requestHeader.session)) Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage().url))
-      else nextFilter(requestHeader)
-    }
-    else nextFilter(requestHeader)
-  }
+  val sessionTimeout = 60 * 1000
 
+  override def apply(nextFilter: (RequestHeader) => Future[Result])(requestHeader: RequestHeader): Future[Result] = {
+    if (isExpired(requestHeader.session, sessionTimeout)) Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.logout().url))
+    else {
+      val result =
+        if (accessRestrictedPaths contains requestHeader.path) {
+          if (!userDefinedIn(requestHeader.session)) Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage().url))
+          else nextFilter(requestHeader)
+        }
+        else nextFilter(requestHeader)
+
+      result
+//        .map(_.withSession(AuthFilter.updateTimestampFor(requestHeader.session, DateTimeUtils)))
+    }
+  }
+}
+
+object AuthFilter {
   def userDefinedIn(session: Session): Boolean = {
     session.get("user").isDefined
+  }
+
+  def isExpired(session: Session, sessionTimeoutMillis: Int): Boolean = {
+    session.get(SessionKeys.lastRequestTimestamp) match {
+      case None => true
+      case Some(timestamp) => timestamp.toLong < DateTimeUtils.now.minusMillis(sessionTimeoutMillis).getMillis
+    }
+  }
+
+  def updateTimestampFor(session: Session, dateTimeUtils: DateTimeUtils): Session = {
+    session + (SessionKeys.lastRequestTimestamp -> dateTimeUtils.now.getMillis.toString)
   }
 }
