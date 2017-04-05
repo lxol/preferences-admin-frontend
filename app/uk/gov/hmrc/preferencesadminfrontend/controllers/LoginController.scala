@@ -30,6 +30,7 @@ import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
+import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.Future
 
@@ -48,7 +49,7 @@ class LoginController @Inject()(loginService: LoginService)(implicit appConfig: 
       userData => {
         if (loginService.isAuthorised(userData)) {
           auditConnector.sendEvent(createLoginEvent(userData.username, true))
-          Future.successful(Redirect(routes.SearchController.showSearchPage.url).withSession(request.session + ("user" -> userData.username)))
+          Future.successful(Redirect(routes.SearchController.showSearchPage.url).withSession(request.session + ("user" -> userData.username) + (uk.gov.hmrc.play.http.SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)))
         }
         else {
           auditConnector.sendEvent(createLoginEvent(userData.username, false))

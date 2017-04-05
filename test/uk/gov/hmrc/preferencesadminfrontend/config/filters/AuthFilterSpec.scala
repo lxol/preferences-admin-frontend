@@ -18,24 +18,27 @@ package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
 import akka.stream.Materializer
 import org.joda.time.DateTime
-import uk.gov.hmrc.play.test.UnitSpec
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import play.api.mvc.{Filter, RequestHeader, Result, Session}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Configuration
+import play.api.mvc.{RequestHeader, Result, Session}
 import uk.gov.hmrc.play.http.SessionKeys
+import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.Future
 
-class AuthFilterSpec extends UnitSpec with ScalaFutures {
+class AuthFilterSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
   "AuthFilter" should {
     "continue to the next filter if path is restricted and user is in a non expired session" in new TestCase {
+
       val validRequestHeader = mock[RequestHeader]
-      val validSession = Session() + ("user" -> "testUser") + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
+      val validSession = Session() + ("user", "testUser") + (SessionKeys.lastRequestTimestamp, DateTimeUtils.now.getMillis.toString)
       when(validRequestHeader.session).thenReturn(validSession)
-      when(validRequestHeader.path).thenReturn("/search")
+      when(validRequestHeader.path).thenReturn("/paperless/admin/search")
 
       val result = filter.apply(nextFilter)(validRequestHeader).futureValue
 
@@ -44,9 +47,9 @@ class AuthFilterSpec extends UnitSpec with ScalaFutures {
 
     "redirect to login page if path is restricted and user is not in session" in new TestCase {
       val validRequestHeader = mock[RequestHeader]
-      val validSession = new Session()
-      when(validRequestHeader.session).thenReturn(validSession)
-      when(validRequestHeader.path).thenReturn("/search")
+      val emptySession = new Session()
+      when(validRequestHeader.session).thenReturn(emptySession)
+      when(validRequestHeader.path).thenReturn("/paperless/admin/search")
 
       val result = filter.apply(nextFilter)(validRequestHeader).futureValue
 
@@ -57,7 +60,7 @@ class AuthFilterSpec extends UnitSpec with ScalaFutures {
       val validRequestHeader = mock[RequestHeader]
       val validSession = Session(Map(SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString))
       when(validRequestHeader.session).thenReturn(validSession)
-      when(validRequestHeader.path).thenReturn("/")
+      when(validRequestHeader.path).thenReturn("/paperless/admin")
 
       val result = filter.apply(nextFilter)(validRequestHeader).futureValue
 
@@ -118,10 +121,22 @@ class AuthFilterSpec extends UnitSpec with ScalaFutures {
   }
 
   trait TestCase extends MockitoSugar {
+
     import scala.concurrent.ExecutionContext.Implicits.global
+
     implicit val materializer = mock[Materializer]
 
-    val filter = new AuthFilter()
+    val defaultTimeout = 5000
+
+    val configuration = {
+      val myMock = mock[Configuration]
+      when(myMock.getInt("userSessionTimeoutInMillis")).thenReturn(Some(defaultTimeout))
+      myMock
+    }
+
+    val filter = new AuthFilter(configuration)
+
     def nextFilter: (RequestHeader) => Future[Result] = (r: RequestHeader) => Future.successful(play.api.mvc.Results.Ok)
   }
+
 }

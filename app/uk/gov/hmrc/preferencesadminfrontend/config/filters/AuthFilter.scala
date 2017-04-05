@@ -19,15 +19,18 @@ package uk.gov.hmrc.preferencesadminfrontend.config.filters
 import javax.inject.{Inject, Singleton}
 
 import akka.stream.Materializer
+import com.typesafe.config.ConfigException.Missing
+import play.api.Configuration
 import play.api.mvc.{Filter, RequestHeader, Result, Session}
 import uk.gov.hmrc.play.http.SessionKeys
 import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class AuthFilter @Inject()(implicit val mat: Materializer, ec: ExecutionContext) extends Filter {
+class AuthFilter @Inject()(configuration: Configuration)(implicit val mat: Materializer, ec: ExecutionContext) extends Filter {
 
   import AuthFilter._
 
@@ -36,28 +39,27 @@ class AuthFilter @Inject()(implicit val mat: Materializer, ec: ExecutionContext)
     routes.LoginController.logout().url
   )
 
-  val sessionTimeout = 60 * 1000
+  val entryPoint = routes.LoginController.showLoginPage().url
+
+  val sessionTimeout = configuration.getInt("userSessionTimeoutInMillis").getOrElse(throw new Missing("Property userSessionTimeoutInMillis"))
 
   override def apply(nextFilter: (RequestHeader) => Future[Result])(requestHeader: RequestHeader): Future[Result] = {
-    if (isExpired(requestHeader.session, sessionTimeout)) Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.logout().url))
+
+    if (!accessRestrictedPaths.contains(requestHeader.path)) return nextFilter(requestHeader)
+    if (isExpired(requestHeader.session, sessionTimeout)) {
+      Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage()).withSession(Session()))
+    }
     else {
       val result =
-        if (accessRestrictedPaths contains requestHeader.path) {
-          if (!userDefinedIn(requestHeader.session)) Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage().url))
-          else nextFilter(requestHeader)
-        }
+        if (!userDefinedIn(requestHeader.session)) Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage().url))
         else nextFilter(requestHeader)
-
-      result
-//        .map(_.withSession(AuthFilter.updateTimestampFor(requestHeader.session, DateTimeUtils)))
+      result.map(_.addingToSession((SessionKeys.lastRequestTimestamp, DateTimeUtils.now.getMillis.toString))(requestHeader))
     }
   }
 }
 
 object AuthFilter {
-  def userDefinedIn(session: Session): Boolean = {
-    session.get("user").isDefined
-  }
+  def userDefinedIn(session: Session): Boolean =  session.get("user").isDefined
 
   def isExpired(session: Session, sessionTimeoutMillis: Int): Boolean = {
     session.get(SessionKeys.lastRequestTimestamp) match {
@@ -66,7 +68,5 @@ object AuthFilter {
     }
   }
 
-  def updateTimestampFor(session: Session, dateTimeUtils: DateTimeUtils): Session = {
-    session + (SessionKeys.lastRequestTimestamp -> dateTimeUtils.now.getMillis.toString)
-  }
+  def updateTimestampFor(session: Session, dateTimeUtils: DateTimeUtils): Session = session.+(SessionKeys.lastRequestTimestamp -> dateTimeUtils.now.getMillis.toString)
 }
