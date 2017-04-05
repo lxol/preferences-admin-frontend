@@ -26,6 +26,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.http.SessionKeys
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
@@ -46,7 +47,8 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
       userData => {
         if (loginService.isAuthorised(userData)) {
           auditConnector.sendEvent(createLoginEvent(userData.username, true))
-          Future.successful(Redirect(routes.SearchController.showSearchPage.url).withSession(request.session + ("user" -> userData.username) + (uk.gov.hmrc.play.http.SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)))
+          val sessionUpdated = request.session + (SessionKeys.userId -> userData.username) + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
+          Future.successful(Redirect(routes.SearchController.showSearchPage.url).withSession(sessionUpdated))
         }
         else {
           auditConnector.sendEvent(createLoginEvent(userData.username, false))
@@ -57,8 +59,8 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
   }
 
   val logout = Action.async { implicit request =>
-    auditConnector.sendEvent(createLogoutEvent(request.session.get("user").get))
-    Future.successful(Redirect(routes.LoginController.showLoginPage().url).withSession(new Session()))
+    auditConnector.sendEvent(createLogoutEvent(request.session.get(SessionKeys.userId).get))
+    Future.successful(Redirect(routes.LoginController.showLoginPage().url).withSession(Session()))
   }
 
   def createLoginEvent(username: String, successful: Boolean) = DataEvent(
