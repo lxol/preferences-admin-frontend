@@ -19,24 +19,8 @@ package uk.gov.hmrc.preferencesadminfrontend.config.filters
 import javax.inject.Singleton
 
 import com.google.inject.Inject
-import com.kenshoo.play.metrics.MetricsFilter
 import play.api.http.DefaultHttpFilters
-import play.filters.csrf.CSRFFilter
-import uk.gov.hmrc.play.filters.{NoCacheFilter, RecoveryFilter}
+import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
 
 @Singleton
-class MicroserviceFilters @Inject()(
-  metricsFilter: MetricsFilter,
-  auditFilter: MicroserviceAuditFilter,
-  loggingFilter: MicroserviceLoggingFilter,
-  csrfFilter: CSRFFilter,
-  authFilter: AuthFilter
-) extends DefaultHttpFilters(
-  metricsFilter,
-  auditFilter,
-  loggingFilter,
-  csrfFilter,
-  authFilter,
-  NoCacheFilter,
-  RecoveryFilter
-)
+class MicroserviceFilters @Inject()(frontendFilters: FrontendFilters) extends DefaultHttpFilters(frontendFilters.frontendFilters:_*)

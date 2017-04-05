@@ -21,23 +21,16 @@ import javax.inject.Inject
 import akka.stream.Materializer
 import play.api.Configuration
 import uk.gov.hmrc.play.audit.filters.FrontendAuditFilter
+import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
-import uk.gov.hmrc.preferencesadminfrontend.config.ControllerConfiguration
+import uk.gov.hmrc.play.config.{AppName, RunMode}
 
-class MicroserviceAuditFilter @Inject()(
-                                         conf: Configuration,
-                                         controllerConf: ControllerConfiguration
-                                       )(implicit val mat: Materializer) extends FrontendAuditFilter {
+class PreferencesFrontendAuditFilter @Inject()(configuration: Configuration)(implicit val mat: Materializer) extends FrontendAuditFilter with AppName with RunMode {
 
-  override lazy val appName = conf.getString("appName").getOrElse("APP NAME NOT SET")
-  override lazy val maskedFormFields = Seq("password")
-  override lazy val applicationPort = None
+  val maskedFormFields = Seq()
+  val applicationPort = None
+  lazy val auditConnector = AuditConnector(LoadAuditingConfig(s"$env.auditing"))
 
-  override def auditConnector: AuditConnector = FrontendAuditConnector
-
-  override def controllerNeedsAuditing(controllerName: String): Boolean = {
-    controllerConf.getControllerConfig(controllerName).needsAuditing
-  }
-
+  def controllerNeedsAuditing(controllerName: String) =
+    configuration.getBoolean(s"controllers.$controllerName.needsAuditing").getOrElse(true)
 }

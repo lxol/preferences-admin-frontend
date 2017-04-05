@@ -26,7 +26,6 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
@@ -35,9 +34,7 @@ import uk.gov.hmrc.time.DateTimeUtils
 import scala.concurrent.Future
 
 @Singleton
-class LoginController @Inject()(loginService: LoginService)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
-
-  def auditConnector: AuditConnector = FrontendAuditConnector
+class LoginController @Inject()(loginService: LoginService, auditConnector: AuditConnector)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
 
   val showLoginPage = Action.async {
     implicit request => Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))

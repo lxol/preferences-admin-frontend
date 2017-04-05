@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.Matchers._
 import org.scalatest.concurrent.ScalaFutures
@@ -27,9 +28,12 @@ import play.api.http._
 import play.api.i18n.MessagesApi
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
+
+import scala.concurrent.Future
 
 class LoginControllerSpec
   extends LoginControllerFixtures
@@ -102,8 +106,11 @@ trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAp
   when(appConfig.analyticsToken).thenReturn("")
   when(appConfig.analyticsHost).thenReturn("")
 
+  val auditConnectorMock = mock[AuditConnector]
+  when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
+
   val playConfiguration = app.injector.instanceOf[Configuration]
 
   val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration)
-  val loginController = new LoginController(new LoginService(loginServiceConfiguration))
+  val loginController = new LoginController(new LoginService(loginServiceConfiguration), auditConnectorMock)
 }
