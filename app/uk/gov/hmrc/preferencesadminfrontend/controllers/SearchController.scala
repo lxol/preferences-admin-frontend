@@ -23,6 +23,7 @@ import play.api.mvc.Action
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
 import scala.concurrent.Future
 
@@ -30,6 +31,11 @@ import scala.concurrent.Future
 class SearchController @Inject()(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
 
   val showSearchPage = Action.async {
-    implicit request => Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification()))
+    implicit request => {
+      request.session.get(User.sessionKey) match {
+        case Some (user) => Future.successful (Ok (uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification () ) )
+        case _ => Future.successful (Unauthorized)
+      }
+    }
   }
 }
