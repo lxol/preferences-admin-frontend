@@ -1,6 +1,6 @@
 # microservice specific routes
-
-POST        /logout       uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.logout
-GET         /search       uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.showSearchPage
-POST        /login        uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
-GET         /             uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.showLoginPage
+GET         /assets/*file        controllers.Assets.at(path="/public", file)
+POST        /logout              uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.logout
+GET         /search              uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.showSearchPage
+POST        /login               uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
+GET         /                    uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.showLoginPage
