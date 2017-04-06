@@ -18,8 +18,8 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
 
-import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
+import play.api.data.{Form, FormError}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -54,14 +54,15 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
         }
         else {
           auditConnector.sendEvent(createLoginEvent(userData.username, false))
-          Future.successful(Unauthorized(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)))
+          val userFormWithErrors = userForm.copy(errors = Seq(FormError("reason", "Wrong username or password combination")))
+          Future.successful(Unauthorized(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userFormWithErrors)))
         }
       }
     )
   }
 
-  val logout = Action.async { implicit request =>
-    auditConnector.sendEvent(createLogoutEvent(request.session.get(User.sessionKey).get))
+  val logout = AuthorisedAction.async { implicit request => user =>
+    auditConnector.sendEvent(createLogoutEvent(user.username))
     Future.successful(Redirect(routes.LoginController.showLoginPage().url).withSession(Session()))
   }
 

@@ -16,19 +16,24 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
-import javax.inject.{Inject, Singleton}
-
-import play.api.i18n.{I18nSupport, MessagesApi}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
-import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+import play.api.mvc._
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
 import scala.concurrent.Future
 
-@Singleton
-class SearchController @Inject()(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
+object AuthorisedAction {
 
-  val showSearchPage = AuthorisedAction.async {
-   implicit request => user => Future.successful(Ok (uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification () ))
+  def async(block: Request[AnyContent] => User => Future[Result]): Action[AnyContent] = {
+    Action.async {
+      implicit request => {
+        val user = request.session.get(User.sessionKey).map(name => User(name, ""))
+
+        user match {
+          case Some(user) => block(request)(user)
+          case _ => Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage().url))
+        }
+      }
+
+    }
   }
 }

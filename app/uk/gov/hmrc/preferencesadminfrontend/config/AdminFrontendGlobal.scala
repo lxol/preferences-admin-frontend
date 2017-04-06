@@ -18,6 +18,8 @@ package uk.gov.hmrc.preferencesadminfrontend.config
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.mvc.Results._
 import play.api.mvc.{Request, RequestHeader, Result}
 import play.api.{Application, Configuration}
 import play.twirl.api.Html
@@ -33,11 +35,11 @@ import scala.concurrent.Future
 class AdminFrontendGlobal @Inject()(
      override val loggingFilter: FrontendLoggingFilter,
      override val frontendAuditFilter: PreferencesFrontendAuditFilter,
-     override val auditConnector: AuditConnector) extends DefaultFrontendGlobal with RunMode {
+     override val auditConnector: AuditConnector)(implicit val messagesApi: MessagesApi) extends DefaultFrontendGlobal with RunMode with I18nSupport {
 
-  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html = Html("")
+  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html = uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message)
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"$env.microservice.metrics")
 
-  override def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = ???
+  override def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = Future.successful(Status(statusCode)(message))
 }

@@ -14,10 +14,10 @@
  * limitations under the License.
  *@
 
-@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
-@import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 @import helper._
 @import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 @(userForm: Form[User])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "Paperless Admin Login", bodyClasses = None) {
@@ -25,7 +25,17 @@
     <p>Enter your details to access the admin console</p>
     @form(action = CSRF(routes.LoginController.login)) {
         <fieldset>
-            <div class="form-field-group ">
+            @if(userForm.hasErrors) {
+                <div style="margin-bottom: 30px">
+                Login failed:
+                @for(error <- userForm.errors) {
+                    <span style="color: darkred;">
+                        @Messages(error.messages, error.args)
+                    </span>
+                }
+                </div>
+            }
+            <div class="form-field-group">
                 <div class="form-field">
                     <label class="label--inline" for="userId">User ID</label>
                     <input type="text" id="username" name="username" required="true">
