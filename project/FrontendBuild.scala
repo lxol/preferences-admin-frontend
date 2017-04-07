@@ -1,9 +1,6 @@
-import sbt._
-import play.sbt.PlayImport._
 import play.core.PlayVersion
-import uk.gov.hmrc.SbtAutoBuildPlugin
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
-import uk.gov.hmrc.versioning.SbtGitVersioning
+import play.sbt.PlayImport._
+import sbt._
 
 object FrontendBuild extends Build with MicroService {
 
@@ -13,7 +10,9 @@ object FrontendBuild extends Build with MicroService {
 
   val compile = Seq(
     ws,
-    "uk.gov.hmrc" %% "frontend-bootstrap" % "7.22.0-0-g0000000",
+//    "uk.gov.hmrc" %% "frontend-bootstrap" % "7.23",
+    "uk.gov.hmrc" %% "frontend-bootstrap" % "7.22.0" excludeAll(ExclusionRule("uk.gov.hmrc", "crypto")),
+//    "uk.gov.hmrc" %% "crypto" % "4.4.0",
     "uk.gov.hmrc" %% "play-partials" % "5.3.0",
     "uk.gov.hmrc" %% "play-authorised-frontend" % "6.3.0",
     "uk.gov.hmrc" %% "play-config" % "4.3.0",

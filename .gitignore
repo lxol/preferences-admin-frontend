@@ -15,6 +15,7 @@ eclipse
 /.idea_modules
 *.iml
 lib
+!lib/crypto_2.11.jar
 lib_managed
 log
 logs
