@@ -16,16 +16,74 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
-import play.api.Play.current
-import play.api.i18n.Messages.Implicits._
+import javax.inject.{Inject, Singleton}
+
+import play.api.data.Forms.{mapping, _}
+import play.api.data.{Form, FormError}
+import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.DataEvent
+import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.http.SessionKeys
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
+import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
+import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.Future
 
+@Singleton
+class LoginController @Inject()(loginService: LoginService, auditConnector: AuditConnector)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
 
-class LoginController extends FrontendController {
-  val login = Action.async { implicit request =>
-		Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login()))
+  val showLoginPage = Action.async {
+    implicit request =>
+      val sessionUpdated = request.session + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
+      Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)).withSession(sessionUpdated))
   }
+
+  val login = Action.async { implicit request =>
+    userForm.bindFromRequest.fold(
+      formWithErrors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors))),
+      userData => {
+        if (loginService.isAuthorised(userData)) {
+          auditConnector.sendEvent(createLoginEvent(userData.username, true))
+          val sessionUpdated = request.session + (User.sessionKey -> userData.username) + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
+          Future.successful(Redirect(routes.SearchController.showSearchPage.url).withSession(sessionUpdated))
+        }
+        else {
+          auditConnector.sendEvent(createLoginEvent(userData.username, false))
+          val userFormWithErrors = userForm.copy(errors = Seq(FormError("reason", "Wrong username or password combination")))
+          Future.successful(Unauthorized(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userFormWithErrors)))
+        }
+      }
+    )
+  }
+
+  val logout = AuthorisedAction.async { implicit request => user =>
+    auditConnector.sendEvent(createLogoutEvent(user.username))
+    Future.successful(Redirect(routes.LoginController.showLoginPage().url).withSession(Session()))
+  }
+
+  def createLoginEvent(username: String, successful: Boolean) = DataEvent(
+    auditSource = appName,
+    auditType = if (successful) "TxSucceeded" else "TxFailed",
+    detail = Map("user" -> username),
+    tags = Map("transactionName" -> "Login")
+  )
+
+  def createLogoutEvent(username: String) = DataEvent(
+    auditSource = appName,
+    auditType = "TxSucceeded",
+    detail = Map("user" -> username),
+    tags = Map("transactionName" -> "Logout")
+  )
+
+  val userForm = Form(
+    mapping(
+      "username" -> text,
+      "password" -> text
+    )(User.apply)(User.unapply)
+  )
 }

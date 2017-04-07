@@ -14,25 +14,40 @@
  * limitations under the License.
  *@
 
-@()(implicit request: Request[_], messages: Messages)
+@import helper._
+@import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
+@(userForm: Form[User])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "Paperless Admin Login", bodyClasses = None) {
     <h1>Paperless Admin</h1>
     <p>Enter your details to access the admin console</p>
-    <fieldset>
-        <div class="form-field-group ">
-            <div class="form-field">
-                <label class="label--inline" for="userId">User ID</label>
-                <input type="text" id="userId" name="userId" required="">
+    @form(action = CSRF(routes.LoginController.login)) {
+        <fieldset>
+            @if(userForm.hasErrors) {
+                <div style="margin-bottom: 30px">
+                Login failed:
+                @for(error <- userForm.errors) {
+                    <span style="color: darkred;">
+                        @Messages(error.messages, error.args)
+                    </span>
+                }
+                </div>
+            }
+            <div class="form-field-group">
+                <div class="form-field">
+                    <label class="label--inline" for="userId">User ID</label>
+                    <input type="text" id="username" name="username" required="true">
+                </div>
+                <div class="form-field">
+                    <label class="label--inline" for="password">Password</label>
+                    <input type="password" id="password" name="password" required="true">
+                </div>
+                <div class="form-field">
+                    <button class="button" type="submit" id="signin">Sign in</button>
+                </div>
             </div>
-
-            <div class="form-field">
-                <label class="label--inline" for="password">Password</label>
-                <input type="password" id="password" name="password" required="">
-            </div>
-            <div class="form-field">
-                <button class="button" type="button" id="signin">Sign in</button>
-            </div>
-        </div>
-    </fieldset>
+        </fieldset>
+    }
 }

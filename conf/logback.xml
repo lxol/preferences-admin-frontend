@@ -43,6 +43,10 @@
         <appender-ref ref="STDOUT_IGNORE_NETTY" />
     </logger>
 
+    <logger name="play.core.netty" additivity="false" level="INFO">
+        <appender-ref ref="STDOUT_IGNORE_NETTY" />
+    </logger>
+
     <logger name="com.google.inject" level="INFO"/>
 
     <logger name="uk.gov" level="INFO"/>
@@ -53,7 +57,7 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>

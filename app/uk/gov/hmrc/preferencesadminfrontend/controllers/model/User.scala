@@ -14,20 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
-import javax.inject.Singleton
+case class User(username: String, password: String)
 
-import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector => Auditing}
-import uk.gov.hmrc.play.config.{AppName, RunMode}
-import uk.gov.hmrc.play.http.ws.{WSDelete, WSGet, WSPost, WSPut}
-
-@Singleton
-class FrontendAuditConnector extends Auditing with AppName {
-  override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
-}
-
-object WSHttp extends WSGet with WSPut with WSPost with WSDelete with AppName with RunMode {
-  override val hooks = NoneRequired
+object User {
+  val sessionKey = "user"
 }

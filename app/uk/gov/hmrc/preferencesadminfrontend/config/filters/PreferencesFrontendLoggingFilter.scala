@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
 import javax.inject.Singleton
 
-import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector => Auditing}
-import uk.gov.hmrc.play.config.{AppName, RunMode}
-import uk.gov.hmrc.play.http.ws.{WSDelete, WSGet, WSPost, WSPut}
+import akka.stream.Materializer
+import com.google.inject.Inject
+import play.api.Configuration
+import uk.gov.hmrc.play.http.logging.filters.FrontendLoggingFilter
 
 @Singleton
-class FrontendAuditConnector extends Auditing with AppName {
-  override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
-}
+class PreferencesFrontendLoggingFilter @Inject()(configuration: Configuration)(implicit val mat: Materializer) extends FrontendLoggingFilter {
 
-object WSHttp extends WSGet with WSPut with WSPost with WSDelete with AppName with RunMode {
-  override val hooks = NoneRequired
+  override def controllerNeedsLogging(controllerName: String): Boolean = {
+    configuration.getBoolean(s"controllers.$controllerName.needsLogging").getOrElse(true)
+  }
 }

@@ -16,36 +16,101 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
-import play.api.http.Status
-import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
+import org.scalatest.Matchers._
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Configuration
 import play.api.http._
+import play.api.i18n.MessagesApi
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.play.test.{WithFakeApplication, UnitSpec}
+import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
+import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
+import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
+import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
 
+import scala.concurrent.Future
 
-class LoginControllerSpec extends UnitSpec with WithFakeApplication{
-
-  val fakeRequest = FakeRequest("GET", "/")
-
-  val loginController = new LoginController {}
+class LoginControllerSpec
+  extends LoginControllerFixtures
+    with ScalaFutures
+    with CSRFTest {
 
   "GET /" should {
     "return 200" in {
-      val result = loginController.login(fakeRequest)
+      val result = loginController.showLoginPage(addToken(FakeRequest("GET", "/")))
       status(result) shouldBe Status.OK
     }
 
     "return HTML" in {
-      val result = loginController.login(fakeRequest)
+      val result = loginController.showLoginPage(addToken(FakeRequest("GET", "/")))
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
     }
-
-
   }
 
+  "POST to login" should {
+    "Redirect to the next page if credentials are correct" in {
+      val result = loginController.login(
+        addToken(FakeRequest()).withFormUrlEncodedBody(
+          "username" -> "user",
+          "password" -> "pwd"
+        )
+      )
 
+      session(result).data should contain ("user" -> "user")
+      status(result) shouldBe Status.SEE_OTHER
+      headers(result) should contain ("Location" -> "/paperless/admin/search")
+    }
+
+    "Return unauthorised if credentials are not correct" in {
+      val result = loginController.login(
+        addToken(FakeRequest()).withFormUrlEncodedBody(
+          "username" -> "user",
+          "password" -> "wrongPassword"
+        )
+      )
+
+      result.futureValue.header.status shouldBe Status.UNAUTHORIZED
+    }
+
+    "Return bad request if credentials are missing" in {
+      val result = loginController.login(
+        addToken(FakeRequest()).withFormUrlEncodedBody()
+      )
+
+      result.futureValue.header.status shouldBe Status.BAD_REQUEST
+    }
+  }
+
+  "POST to logout" should {
+    "Destroy existing session and redirect to login page" in {
+      val result = loginController.logout(addToken(FakeRequest().withSession("user" -> "user")))
+
+      session(result).data should not contain ("user" -> "user")
+      status(result) shouldBe Status.SEE_OTHER
+      headers(result) should contain ("Location" -> "/paperless/admin")
+    }
+  }
+}
+
+trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite {
+
+  implicit val appConfig = mock[FrontendAppConfig]
+  implicit val messagesApi = app.injector.instanceOf[MessagesApi]
+
+  when(appConfig.analyticsToken).thenReturn("")
+  when(appConfig.analyticsHost).thenReturn("")
+
+  val auditConnectorMock = mock[AuditConnector]
+  when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
+
+  val playConfiguration = app.injector.instanceOf[Configuration]
+
+  val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration)
+  val loginController = new LoginController(new LoginService(loginServiceConfiguration), auditConnectorMock)
 }

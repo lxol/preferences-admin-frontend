@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.config
 
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 
-import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector => Auditing}
-import uk.gov.hmrc.play.config.{AppName, RunMode}
-import uk.gov.hmrc.play.http.ws.{WSDelete, WSGet, WSPost, WSPut}
+import play.api.{Application, Logger}
+import uk.gov.hmrc.crypto.ApplicationCrypto
 
 @Singleton
-class FrontendAuditConnector extends Auditing with AppName {
-  override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
-}
+class FrontendStartup @Inject()(app: Application, appCrypto: ApplicationCrypto, graphiteConfiguration: GraphiteConfiguration) {
 
-object WSHttp extends WSGet with WSPut with WSPost with WSDelete with AppName with RunMode {
-  override val hooks = NoneRequired
+  lazy val appName: String = app.configuration.getString("appName").getOrElse("APP NAME NOT SET")
+  lazy val appMode = app.mode
+
+  if (graphiteConfiguration.enabled) graphiteConfiguration.startGraphite()
+
+  Logger.info(s"Starting frontend : $appName. : in mode : $appMode")
+  appCrypto.verifyConfiguration()
 }
