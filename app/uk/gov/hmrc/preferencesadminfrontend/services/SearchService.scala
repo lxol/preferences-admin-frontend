@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
 
-import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector => Auditing}
-import uk.gov.hmrc.play.config.inject.AppName
+import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{ErrorMessage, Preference, TaxIdentifier}
+
+import scala.concurrent.Future
 
 @Singleton
-class FrontendAuditConnector @Inject()(appName: AppName) extends Auditing {
-  override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
+class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) {
+
+  def getPreference(taxId: TaxIdentifier) : Future[Either[ErrorMessage,Option[Preference]]] = {
+     ???
+  }
+
 }

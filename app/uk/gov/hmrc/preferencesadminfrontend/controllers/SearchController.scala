@@ -31,4 +31,8 @@ class SearchController @Inject()(implicit appConfig: AppConfig, val messagesApi:
   val showSearchPage = AuthorisedAction.async {
    implicit request => user => Future.successful(Ok (uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification () ))
   }
+
+  def search(taxIdentifierType: String, taxId: String) = AuthorisedAction.async {
+    implicit request => user => Future.successful(Ok)
+  }
 }
