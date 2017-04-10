@@ -21,15 +21,28 @@
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "Customer Identification", bodyClasses = None) {
     <h1>Customer Identification</h1>
-    <fieldset>
-        <div class="form-field-group ">
+    <fieldset class="">
+        <label class="label" for="userId">Tax Identifier Type:</label>
+        <div class="form-field--inline">
+            <label class="block-label">
+                <input type="radio" name="taxId"/>
+                SaUtr
+            </label>
+        </div>
+        <div class="form-field--inline">
+            <label class="block-label">
+                <input type="radio" name="taxId"/>
+                Nino
+            </label>
+        </div>
+        <div class="form-field-group">
             <div class="form-field">
-                <label class="label--inline" for="userId">Tax Identifier Type</label>
+                <label class="label" for="userId">Tax Identifier:</label>
                 <input type="text" id="taxId" name="taxId" required="true">
             </div>
-            <div class="form-field">
-                <button class="button" type="submit" id="signin">Search</button>
-            </div>
+        </div>
+        <div class="form-field">
+            <button class="button" type="submit" id="search">Search</button>
         </div>
     </fieldset>
 }
