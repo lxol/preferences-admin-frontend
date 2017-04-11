@@ -18,16 +18,33 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
 
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{ErrorMessage, Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) {
 
-  def getPreference(taxId: TaxIdentifier) : Future[Either[ErrorMessage,Option[Preference]]] = {
-     ???
+  def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[PreferenceResult] = {
+    (for {
+      preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
+      taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
+    } yield (preferenceDetail, taxIdentifiers) match {
+      case (Some(preferenceDetails), taxIds) => PreferenceFound(Preference(preferenceDetails.paperless, preferenceDetails.email, taxIds))
+      case (None, _) => PreferenceNotFound
+    }).recover {
+      case t: Throwable => Failure(t.getMessage)
+    }
   }
 
 }
+
+trait PreferenceResult
+
+case class PreferenceFound(preference: Preference) extends PreferenceResult
+
+case object PreferenceNotFound extends PreferenceResult
+
+case class Failure(reason: String) extends PreferenceResult

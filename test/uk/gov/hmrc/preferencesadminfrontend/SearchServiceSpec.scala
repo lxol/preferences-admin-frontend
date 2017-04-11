@@ -16,15 +16,18 @@
 
 package uk.gov.hmrc.preferencesadminfrontend
 
-import org.scalatest.Ignore
+import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
-import uk.gov.hmrc.preferencesadminfrontend.services.SearchService
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.connectors.{EntityResolverConnector, PreferenceDetails}
+import uk.gov.hmrc.preferencesadminfrontend.services._
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
 
-@Ignore
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
 
 
@@ -36,29 +39,73 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
     val entityResolverConnector = mock[EntityResolverConnector]
     val searchService = new SearchService(entityResolverConnector)
 
-
+    implicit val hc = HeaderCarrier()
 
     "return preferences for nino user when it exists" in {
 
-        val result = searchService.getPreference(validSaUtr).futureValue
+      val preferenceDetails = Some(PreferenceDetails(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true)))
+      when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(preferenceDetails))
+      val taxIdentifiers = Seq(validNino, validSaUtr)
+      when(entityResolverConnector.getTaxIdentifiers(validNino)).thenReturn(Future.successful(taxIdentifiers))
 
-        result shouldBe(Right(Some(Preference)))
+      val result = searchService.getPreference(validNino).futureValue
+
+      result match {
+        case PreferenceFound(preference) => {
+          preference.paperless shouldBe true
+          preference.email shouldBe Email("john.doe@digital.hmrc.gov.uk", true)
+          preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
+        }
+        case _ => fail()
+      }
     }
 
     "return preferences for utr user when it exists" in {
+      val preferenceDetails = Some(PreferenceDetails(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true)))
+      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
+      val taxIdentifiers = Seq(validNino, validSaUtr)
+      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
+      val result = searchService.getPreference(validSaUtr).futureValue
+
+      result match {
+        case PreferenceFound(preference) => {
+          preference.paperless shouldBe true
+          preference.email shouldBe Email("john.doe@digital.hmrc.gov.uk", true)
+          preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
+        }
+        case _ => fail()
+      }
     }
 
-    "return none if the identifier does not exist" in {
+    "return none if the saUtr identifier does not exist" in {
+      val preferenceDetails = None
+      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
+      val taxIdentifiers = Seq()
+      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
+      val result = searchService.getPreference(validSaUtr).futureValue
+
+      result shouldBe PreferenceNotFound
     }
 
-    "return ErrorMessage if taxIdentifier is invalid" in {
+    "return ErrorMessage if something goes wrong when calling downstream dependencies" in {
+      val taxIdentifiers = Seq()
+      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.failed(new Throwable("my-message")))
+      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
+      val result = searchService.getPreference(validSaUtr).futureValue
+
+      result should matchPattern { case Failure(_) => }
     }
 
-    "return ErrorMEssage if something goes wrong when calling downstream dependencies" in {
+    "return ErrorMessage if something goes wrong when calling downstream dependencies v2" in {
+      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(None))
+      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenThrow(new RuntimeException("my-message"))
 
+      val result = searchService.getPreference(validSaUtr).futureValue
+
+      result should matchPattern { case Failure(_) => }
     }
   }
 }

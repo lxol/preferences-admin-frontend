@@ -25,7 +25,7 @@ import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 import uk.gov.hmrc.play.config.inject.ServicesConfig
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.connectors.{EntityResolverConnector, PreferenceDetails}
+import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -92,7 +92,6 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
       result.size shouldBe (0)
     }
 
-
   }
 
   "getPreferenceDetails" should {
@@ -106,7 +105,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockRequest.get()).thenReturn(Future.successful(response))
 
 
-      val result = entityResolverConnector.getPreference(sautr).futureValue
+      val result = entityResolverConnector.getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
       result.get.paperless shouldBe true
@@ -122,7 +121,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockRequest.get()).thenReturn(Future.successful(response))
 
 
-      val result = entityResolverConnector.getPreference(nino).futureValue
+      val result = entityResolverConnector.getPreferenceDetails(nino).futureValue
 
       result shouldBe defined
       result.get.paperless shouldBe true
@@ -137,7 +136,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockRequest.get()).thenReturn(Future.successful(response))
 
 
-      val result = entityResolverConnector.getPreference(sautr).futureValue
+      val result = entityResolverConnector.getPreferenceDetails(sautr).futureValue
 
       result should not be defined
     }

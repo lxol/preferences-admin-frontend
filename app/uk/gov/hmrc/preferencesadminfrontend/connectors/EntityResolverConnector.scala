@@ -18,9 +18,10 @@ package uk.gov.hmrc.preferencesadminfrontend.connectors
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.http.Status
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import play.api.libs.functional.syntax._
 import uk.gov.hmrc.play.config.inject.ServicesConfig
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
@@ -43,31 +44,44 @@ class EntityResolverConnector @Inject()(wsClient: WSClient, serviceConfiguration
     val request = wsClient.url(s"$serviceUrl/entity-resolver/${regimeFor(taxId)}/${taxId.value}")
 
     val response = request.get()
-    val result = response.map( _.json.as[JsObject]).map { jObj =>
-      jObj.-("_id").fields.collect {
-        case (name, JsString(value)) => TaxIdentifier(name, value)
+    response.map {
+      r =>
+        r.status match {
+          case Status.OK => {
+            r.json.as[JsObject].fields.collect {
+              case (name, JsString(value)) if (name != "_id") => TaxIdentifier(name, value)
+            }
+          }
+          case Status.NOT_FOUND => Seq()
+          case errorStatus => throw new Throwable(s"entity-resolver returned $errorStatus")
+        }
+    }
+  }
+
+    def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
+      val request = wsClient.url(s"$serviceUrl/portal/preferences/${regimeFor(taxId)}/${taxId.value}")
+      val response = request.get()
+      response.map {
+        r =>
+          r.status match {
+            case Status.OK => r.json.asOpt[PreferenceDetails]
+            case Status.NOT_FOUND => None
+            case errorStatus => throw new Throwable(s"entity-resolver returned $errorStatus")
+          }
       }
     }
-    result
   }
 
-  def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
-    val request = wsClient.url(s"$serviceUrl/portal/preferences/${regimeFor(taxId)}/${taxId.value}")
-    val response = request.get()
-    response.map( _.json.asOpt[PreferenceDetails])
+  case class PreferenceDetails(paperless: Boolean, email: Email)
+
+  object PreferenceDetails {
+
+    implicit val reads: Reads[PreferenceDetails] = (
+      (JsPath \ "digital").read[Boolean] and
+        (JsPath \ "email" \ "email").read[String] and
+        (JsPath \ "email" \ "status").read[String]
+      ) ((paperless, address, status) => {
+      val verified = status == "verified"
+      PreferenceDetails(paperless, Email(address, verified))
+    })
   }
-}
-
-case class PreferenceDetails(paperless: Boolean, email: Email)
-
-object PreferenceDetails {
-
-  implicit val reads : Reads[PreferenceDetails] = (
-    (JsPath \ "digital").read[Boolean] and
-      (JsPath \ "email" \ "email").read[String] and
-      (JsPath \ "email" \ "status").read[String]
-    ) ((paperless, address, status) => {
-    val verified = status == "verified"
-    PreferenceDetails(paperless, Email(address, verified))
-  })
-}

@@ -48,6 +48,11 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain("Location" -> "/paperless/admin")
     }
+
+    "return ErrorMessage if taxIdentifier is invalid" in {
+
+    }
+
   }
 }
 
