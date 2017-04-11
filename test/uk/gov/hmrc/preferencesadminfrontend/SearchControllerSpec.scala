@@ -64,7 +64,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
     "return a preference with additional tax identifiers" in {
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceFound(Preference(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true), Seq()))))
 
-      val result = searchController.search("sa", "12341234")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+      val result = searchController.search(addToken(FakeRequest("GET", "?taxIdentifierType=nino&taxId=CE067583D").withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
     }

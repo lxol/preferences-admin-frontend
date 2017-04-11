@@ -14,9 +14,9 @@
  * limitations under the License.
  *@
 
-@@import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
-@import uk.gov.hmrc.preferencesadminfrontend.services.model.Preference
-@(preference: Preference)(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+@import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
+@(searchTaxIdentifier: TaxIdentifier, preference: Preference)(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
         <h1>User Summary</h1>
@@ -24,11 +24,13 @@
             <label class="label--inline bold">
                 Tax Identifier Type:
             </label>
+            @searchTaxIdentifier.name
         </p>
         <p>
             <label class="label--inline bold">
                 Tax Identifier:
             </label>
+            @searchTaxIdentifier.value
         </p>
         <p>
             <label class="label--inline bold">
@@ -41,7 +43,7 @@
                 Other identifier:
             </label>
             <ul class="bullets">
-                @preference.taxIdentifiers.map { ti =>
+                @preference.taxIdentifiers.filterNot(_ == searchTaxIdentifier).map { ti =>
                     <li>@ti.name: @ti.value</li>
                 }
             </ul>

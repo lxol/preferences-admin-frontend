@@ -4,4 +4,4 @@ POST        /logout                                  uk.gov.hmrc.preferencesadmi
 POST        /login                                   uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
 GET         /                                        uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.showLoginPage
 GET         /search                                  uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.showSearchPage
-GET         /search/:taxIdentifierType/:taxId        uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.search(taxIdentifierType: String, taxId: String)
+GET         /search/q                                uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.search

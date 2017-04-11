@@ -37,14 +37,17 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
    implicit request => user => Future.successful(Ok (uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification () ))
   }
 
-  def search(taxIdentifierType: String, taxId: String) = AuthorisedAction.async {
+  val search = AuthorisedAction.async {
     implicit request => user =>
-      searchService.getPreference(TaxIdentifier(taxIdentifierType, taxId)).map {
+      val taxIdType = request.getQueryString("taxIdentifierType").getOrElse("")
+      val taxId = request.getQueryString("taxId").getOrElse("")
+      val searchTaxIdentifier = TaxIdentifier(taxIdType, taxId)
+      searchService.getPreference(searchTaxIdentifier).map {
         case PreferenceFound(preference) => {
-          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(preference))
+          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
         }
-        case PreferenceNotFound => Ok
-        case Failure(reason) => Ok
+        case PreferenceNotFound => NotFound
+        case Failure(reason) => InternalServerError
       }
   }
 
