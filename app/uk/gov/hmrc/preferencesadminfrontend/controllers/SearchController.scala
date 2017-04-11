@@ -19,20 +19,39 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 import javax.inject.{Inject, Singleton}
 
 import play.api.i18n.{I18nSupport, MessagesApi}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
+import uk.gov.hmrc.preferencesadminfrontend.services.{Failure, PreferenceFound, PreferenceNotFound, SearchService}
 
 import scala.concurrent.Future
 
 @Singleton
-class SearchController @Inject()(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
+class SearchController @Inject()(auditConnector: AuditConnector, searchService: SearchService)
+                                (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
 
   val showSearchPage = AuthorisedAction.async {
    implicit request => user => Future.successful(Ok (uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification () ))
   }
 
   def search(taxIdentifierType: String, taxId: String) = AuthorisedAction.async {
-    implicit request => user => Future.successful(Ok)
+    implicit request => user =>
+      searchService.getPreference(TaxIdentifier(taxIdentifierType, taxId)).map {
+        case PreferenceFound(preference) => {
+          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(preference))
+        }
+        case PreferenceNotFound => Ok
+        case Failure(reason) => Ok
+      }
   }
+
+  def createSearchEvent(username: String, successful: Boolean) = DataEvent(
+    auditSource = appName,
+    auditType = if (successful) "TxSucceeded" else "TxFailed",
+    detail = Map("user" -> username),
+    tags = Map("transactionName" -> "Login")
+  )
 }
