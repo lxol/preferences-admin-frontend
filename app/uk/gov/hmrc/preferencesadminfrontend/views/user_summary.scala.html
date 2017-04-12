@@ -19,45 +19,52 @@
 @(searchTaxIdentifier: TaxIdentifier, preference: Preference)(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
-        <h1>User Summary</h1>
+    <h1>User Summary</h1>
+    <p>
+        <label class="label--inline bold">
+            Tax Identifier Type:
+        </label>
+        @searchTaxIdentifier.name
+    </p>
+    <p>
+        <label class="label--inline bold">
+            Tax Identifier:
+        </label>
+        @searchTaxIdentifier.value
+    </p>
+    <p>
+        <label class="label--inline bold">
+            Customer's email:
+        </label>
+        @{preference.email.address}
+    </p>
+    <p>
+        <label class="label--inline bold">
+            Other identifier:
+        </label>
+        <ul class="bullets">
+            @preference.taxIdentifiers.filterNot(_ == searchTaxIdentifier).map { ti =>
+                <li>@ti.name: @ti.value</li>
+            }
+        </ul>
+    </p>
+    <p>
+        <label class="label--inline bold">
+            Opted in to paperless:
+        </label>
+        @{if(preference.paperless) "yes" else "no"}
+    </p>
+    @if(preference.paperless) {
         <p>
             <label class="label--inline bold">
-                Tax Identifier Type:
+                Verified:
             </label>
-            @searchTaxIdentifier.name
+            @{
+                if(preference.email.verified) "yes" else "no"
+            }
         </p>
-        <p>
-            <label class="label--inline bold">
-                Tax Identifier:
-            </label>
-            @searchTaxIdentifier.value
-        </p>
-        <p>
-            <label class="label--inline bold">
-                Customer's email:
-            </label>
-            @{preference.email.address}
-        </p>
-        <p>
-            <label class="label--inline bold">
-                Other identifier:
-            </label>
-            <ul class="bullets">
-                @preference.taxIdentifiers.filterNot(_ == searchTaxIdentifier).map { ti =>
-                    <li>@ti.name: @ti.value</li>
-                }
-            </ul>
-        </p>
-        <p>
-            <label class="label--inline bold">
-                Opted in to paperless:
-            </label>
-            @{preference.paperless}
-        </p>
-        <p>
-            <label class="label--inline bold">
-                Confirmed:
-            </label>
-            @{preference.email.verified}
-        </p>
+    }
+    <div style="margin-top: 100px;">
+        <a href="/paperless/admin/search?taxIdentifierType=@{searchTaxIdentifier.name}&taxId=@{searchTaxIdentifier.value}">Back to search</a>
+    </div>
 }

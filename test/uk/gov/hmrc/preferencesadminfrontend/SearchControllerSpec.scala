@@ -79,7 +79,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=notfound")
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=notfound&taxIdentifierType=nino&taxId=CE067583D")
     }
 
     "redirect to showSearchPage if nino value is invalid" in {
@@ -88,7 +88,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForInvalidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=invalidTaxId")
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=invalidTaxId&taxIdentifierType=nino&taxId=1234567")
     }
 
     "redirect to showSearchPage if query parameters are missing" in {
@@ -97,7 +97,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
       val result = searchController.search(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=genericError")
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=genericError&taxIdentifierType=&taxId=")
     }
   }
 }
