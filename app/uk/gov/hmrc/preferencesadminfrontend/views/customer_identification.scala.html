@@ -21,6 +21,13 @@
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "Customer Identification", bodyClasses = None) {
     <h1>Customer Identification</h1>
+
+    @{request.getQueryString("err") match {
+        case Some("notfound") => "Error: Preference not found!"
+        case Some(_) => "Error: something went wrong. Please try later."
+        case _ =>
+    }}
+
     @form(action = routes.SearchController.search()) {
     <fieldset class="">
         <label class="label" for="userId">Tax Identifier Type:</label>

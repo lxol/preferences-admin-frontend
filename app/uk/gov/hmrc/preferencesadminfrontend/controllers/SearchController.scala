@@ -34,27 +34,34 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
                                 (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
 
   val showSearchPage = AuthorisedAction.async {
-   implicit request => user => Future.successful(Ok (uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification () ))
+    implicit request => user => Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification()))
   }
 
   val search = AuthorisedAction.async {
-    implicit request => user =>
-      val taxIdType = request.getQueryString("taxIdentifierType").getOrElse("")
-      val taxId = request.getQueryString("taxId").getOrElse("")
-      val searchTaxIdentifier = TaxIdentifier(taxIdType, taxId)
-      searchService.getPreference(searchTaxIdentifier).map {
-        case PreferenceFound(preference) => {
-          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
+    implicit request =>
+      user =>
+        val taxIdType = request.getQueryString("taxIdentifierType").getOrElse("")
+        val taxId = request.getQueryString("taxId").getOrElse("")
+        val searchTaxIdentifier = TaxIdentifier(taxIdType, taxId)
+
+        if (searchService.isValid(searchTaxIdentifier)) {
+          searchService.getPreference(searchTaxIdentifier).map {
+            case PreferenceFound(preference) => Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
+            case PreferenceNotFound => redirectToError("notfound")
+            case Failure(reason) => redirectToError("genericError")
+          }
         }
-        case PreferenceNotFound => NotFound
-        case Failure(reason) => InternalServerError
-      }
+        else {
+          Future.successful(redirectToError("invalidTaxId"))
+        }
   }
+
+  def redirectToError(tag: String) = Redirect(s"${routes.SearchController.showSearchPage.url}?err=$tag")
 
   def createSearchEvent(username: String, successful: Boolean) = DataEvent(
     auditSource = appName,
     auditType = if (successful) "TxSucceeded" else "TxFailed",
     detail = Map("user" -> username),
-    tags = Map("transactionName" -> "Login")
+    tags = Map("transactionName" -> "Search")
   )
 }

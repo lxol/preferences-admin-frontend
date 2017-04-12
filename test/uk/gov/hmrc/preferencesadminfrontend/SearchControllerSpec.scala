@@ -33,7 +33,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, Preference}
-import uk.gov.hmrc.preferencesadminfrontend.services.{PreferenceFound, SearchService}
+import uk.gov.hmrc.preferencesadminfrontend.services.{Failure, PreferenceFound, PreferenceNotFound, SearchService}
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
 
 import scala.concurrent.Future
@@ -61,15 +61,46 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
 
   "search(taxIdentifier)" should {
 
-    "return a preference with additional tax identifiers" in {
-      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceFound(Preference(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true), Seq()))))
+    val queryParamsForValidNino = "?taxIdentifierType=nino&taxId=CE067583D"
+    val queryParamsForInvalidNino = "?taxIdentifierType=nino&taxId=1234567"
 
-      val result = searchController.search(addToken(FakeRequest("GET", "?taxIdentifierType=nino&taxId=CE067583D").withSession(User.sessionKey -> "user")))
+    "return a preference if tax identifier exists" in {
+      val preference = Preference(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true), Seq())
+      when(searchServiceMock.isValid(any())).thenReturn(true)
+      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceFound(preference)))
+
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
     }
 
-    "return ErrorMessage if taxIdentifier is invalid" in {
+    "redirect to showSearchPage if preferences does not exist" in {
+      when(searchServiceMock.isValid(any())).thenReturn(true)
+      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceNotFound))
+
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.SEE_OTHER
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=notfound")
+    }
+
+    "redirect to showSearchPage if nino value is invalid" in {
+      when(searchServiceMock.isValid(any())).thenReturn(false)
+
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForInvalidNino).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.SEE_OTHER
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=invalidTaxId")
+    }
+
+    "redirect to showSearchPage if query parameters are missing" in {
+      when(searchServiceMock.isValid(any())).thenReturn(true)
+      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(Failure("my-error")))
+
+      val result = searchController.search(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.SEE_OTHER
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=genericError")
     }
   }
 }

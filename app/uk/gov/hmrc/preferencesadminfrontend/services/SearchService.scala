@@ -18,6 +18,7 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
 
+import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
@@ -26,6 +27,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) {
+
+  def isValid(taxId: TaxIdentifier) : Boolean = {
+    taxId match {
+      case TaxIdentifier("nino",value) => Nino.isValid(value)
+      case _ => true
+    }
+  }
 
   def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[PreferenceResult] = {
     (for {

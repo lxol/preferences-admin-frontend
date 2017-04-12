@@ -41,7 +41,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
 
     implicit val hc = HeaderCarrier()
 
-    "return preferences for nino user when it exists" in {
+    "return preferences for nino user when it exists" in new TestCase {
 
       val preferenceDetails = Some(PreferenceDetails(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true)))
       when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(preferenceDetails))
@@ -60,7 +60,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       }
     }
 
-    "return preferences for utr user when it exists" in {
+    "return preferences for utr user when it exists" in new TestCase {
       val preferenceDetails = Some(PreferenceDetails(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true)))
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
       val taxIdentifiers = Seq(validNino, validSaUtr)
@@ -78,7 +78,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       }
     }
 
-    "return none if the saUtr identifier does not exist" in {
+    "return none if the saUtr identifier does not exist" in new TestCase {
       val preferenceDetails = None
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
       val taxIdentifiers = Seq()
@@ -89,7 +89,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       result shouldBe PreferenceNotFound
     }
 
-    "return ErrorMessage if something goes wrong when calling downstream dependencies" in {
+    "return ErrorMessage if something goes wrong when calling downstream dependencies" in new TestCase {
       val taxIdentifiers = Seq()
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.failed(new Throwable("my-message")))
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
@@ -99,7 +99,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       result should matchPattern { case Failure(_) => }
     }
 
-    "return ErrorMessage if something goes wrong when calling downstream dependencies v2" in {
+    "return ErrorMessage if something goes wrong when calling downstream dependencies v2" in new TestCase {
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(None))
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenThrow(new RuntimeException("my-message"))
 
@@ -107,5 +107,29 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
 
       result should matchPattern { case Failure(_) => }
     }
+  }
+
+  "isValid" should {
+
+    "return true for non nino tax identifiers" in new TestCase {
+      searchService.isValid(validSaUtr) shouldBe true
+    }
+
+    "return true for a valid nino" in new TestCase {
+      searchService.isValid(validNino) shouldBe true
+    }
+
+    "return false for an invalid nino" in new TestCase {
+      searchService.isValid(invalidNino) shouldBe false
+    }
+  }
+
+  trait TestCase {
+    val validSaUtr = TaxIdentifier("sautr", "123456789")
+    val validNino = TaxIdentifier("nino", "CE067583D")
+    val invalidNino = TaxIdentifier("nino", "123123456S")
+
+    val entityResolverConnector = mock[EntityResolverConnector]
+    val searchService = new SearchService(entityResolverConnector)
   }
 }
