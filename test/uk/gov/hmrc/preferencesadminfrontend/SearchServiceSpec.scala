@@ -78,7 +78,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       }
     }
 
-    "return none if the saUtr identifier does not exist" in new TestCase {
+    "return PreferenceNotFound if the saUtr identifier does not exist" in new TestCase {
       val preferenceDetails = None
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
       val taxIdentifiers = Seq()
@@ -87,6 +87,13 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       val result = searchService.getPreference(validSaUtr).futureValue
 
       result shouldBe PreferenceNotFound
+    }
+
+    "return InvalidTaxIdentifier if the nino is invalid" in new TestCase {
+      val result = searchService.getPreference(invalidNino).futureValue
+
+      verifyZeroInteractions(entityResolverConnector)
+      result shouldBe InvalidTaxIdentifier
     }
 
     "return ErrorMessage if something goes wrong when calling downstream dependencies" in new TestCase {

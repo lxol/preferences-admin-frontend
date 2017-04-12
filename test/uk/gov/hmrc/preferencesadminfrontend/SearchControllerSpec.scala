@@ -32,8 +32,8 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
+import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, Preference}
-import uk.gov.hmrc.preferencesadminfrontend.services.{Failure, PreferenceFound, PreferenceNotFound, SearchService}
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
 
 import scala.concurrent.Future
@@ -66,7 +66,6 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
 
     "return a preference if tax identifier exists" in {
       val preference = Preference(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true), Seq())
-      when(searchServiceMock.isValid(any())).thenReturn(true)
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceFound(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
@@ -75,7 +74,6 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
     }
 
     "redirect to showSearchPage if preferences does not exist" in {
-      when(searchServiceMock.isValid(any())).thenReturn(true)
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceNotFound))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
@@ -85,7 +83,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
     }
 
     "redirect to showSearchPage if nino value is invalid" in {
-      when(searchServiceMock.isValid(any())).thenReturn(false)
+      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(InvalidTaxIdentifier))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForInvalidNino).withSession(User.sessionKey -> "user")))
 
@@ -94,7 +92,6 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
     }
 
     "redirect to showSearchPage if query parameters are missing" in {
-      when(searchServiceMock.isValid(any())).thenReturn(true)
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(Failure("my-error")))
 
       val result = searchController.search(addToken(FakeRequest().withSession(User.sessionKey -> "user")))

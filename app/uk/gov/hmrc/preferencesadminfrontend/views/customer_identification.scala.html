@@ -24,6 +24,7 @@
 
     @{request.getQueryString("err") match {
         case Some("notfound") => "Error: Preference not found!"
+        case Some("invalidTaxId") => "Tax identifier format is wrong."
         case Some(_) => "Error: something went wrong. Please try later."
         case _ =>
     }}

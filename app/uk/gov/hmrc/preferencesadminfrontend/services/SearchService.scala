@@ -28,22 +28,25 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) {
 
-  def isValid(taxId: TaxIdentifier) : Boolean = {
+  def isValid(taxId: TaxIdentifier): Boolean = {
     taxId match {
-      case TaxIdentifier("nino",value) => Nino.isValid(value)
+      case TaxIdentifier("nino", value) => Nino.isValid(value)
       case _ => true
     }
   }
 
   def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[PreferenceResult] = {
-    (for {
-      preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
-      taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
-    } yield (preferenceDetail, taxIdentifiers) match {
-      case (Some(preferenceDetails), taxIds) => PreferenceFound(Preference(preferenceDetails.paperless, preferenceDetails.email, taxIds))
-      case (None, _) => PreferenceNotFound
-    }).recover {
-      case t: Throwable => Failure(t.getMessage)
+    if (!isValid(taxId)) Future.successful(InvalidTaxIdentifier)
+    else {
+      (for {
+        preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
+        taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
+      } yield (preferenceDetail, taxIdentifiers) match {
+        case (Some(preferenceDetails), taxIds) => PreferenceFound(Preference(preferenceDetails.paperless, preferenceDetails.email, taxIds))
+        case (None, _) => PreferenceNotFound
+      }).recover {
+        case t: Throwable => Failure(t.getMessage)
+      }
     }
   }
 
@@ -56,3 +59,5 @@ case class PreferenceFound(preference: Preference) extends PreferenceResult
 case object PreferenceNotFound extends PreferenceResult
 
 case class Failure(reason: String) extends PreferenceResult
+
+case object InvalidTaxIdentifier extends PreferenceResult

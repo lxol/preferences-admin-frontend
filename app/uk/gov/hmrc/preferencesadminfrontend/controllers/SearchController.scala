@@ -24,8 +24,8 @@ import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
-import uk.gov.hmrc.preferencesadminfrontend.services.{Failure, PreferenceFound, PreferenceNotFound, SearchService}
 
 import scala.concurrent.Future
 
@@ -44,24 +44,32 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
         val taxId = request.getQueryString("taxId").getOrElse("")
         val searchTaxIdentifier = TaxIdentifier(taxIdType, taxId)
 
-        if (searchService.isValid(searchTaxIdentifier)) {
-          searchService.getPreference(searchTaxIdentifier).map {
-            case PreferenceFound(preference) => Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
-            case PreferenceNotFound => redirectToError("notfound")
-            case Failure(reason) => redirectToError("genericError")
+        searchService.getPreference(searchTaxIdentifier).map {
+          case PreferenceFound(preference) => {
+            createSearchEvent(user.username, searchTaxIdentifier, successful = true)
+            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
           }
-        }
-        else {
-          Future.successful(redirectToError("invalidTaxId"))
+          case PreferenceNotFound => {
+            createSearchEvent(user.username, searchTaxIdentifier, successful = true)
+            redirectToError("notfound")
+          }
+          case InvalidTaxIdentifier => {
+            createSearchEvent(user.username, searchTaxIdentifier, successful = false)
+            redirectToError("invalidTaxId")
+          }
+          case Failure(reason) => {
+            createSearchEvent(user.username, searchTaxIdentifier, successful = false)
+            redirectToError("genericError")
+          }
         }
   }
 
   def redirectToError(tag: String) = Redirect(s"${routes.SearchController.showSearchPage.url}?err=$tag")
 
-  def createSearchEvent(username: String, successful: Boolean) = DataEvent(
+  def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, successful: Boolean) = DataEvent(
     auditSource = appName,
     auditType = if (successful) "TxSucceeded" else "TxFailed",
-    detail = Map("user" -> username),
+    detail = Map("user" -> username, taxIdentifier.name -> taxIdentifier.value),
     tags = Map("transactionName" -> "Search")
   )
 }
