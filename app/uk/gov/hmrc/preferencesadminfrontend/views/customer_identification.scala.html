@@ -15,21 +15,54 @@
  *@
 
 @import helper._
-@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 @import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 @()(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+
+@taxIdselected(taxIdTypeValue: String) = @{
+    request.getQueryString("taxIdentifierName") == Some(taxIdTypeValue)
+}
+
+@createRadioButtonFor(taxIdTypeLabel: String, taxIdTypeValue: String) = {
+    <label class="block-label @if(taxIdselected(taxIdTypeValue)) { add-focus selected }">
+        <input type="radio" name="taxIdentifierName" value="@taxIdTypeValue" required="true" @if(taxIdselected(taxIdTypeValue)) { checked="checked" } />
+        @taxIdTypeLabel
+    </label>
+}
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "Customer Identification", bodyClasses = None) {
     <h1>Customer Identification</h1>
-    <fieldset>
-        <div class="form-field-group ">
+
+    @request.getQueryString("err").map { err =>
+        <div style="margin-bottom: 30px">
+            <span style="color: darkred;">
+            @{err match {
+                case "notfound" => "No paperless preference found for that identifier."
+                case "invalidTaxId" => "Tax identifier format is wrong."
+                case _ => "Error: something went wrong. Please try later."
+            }}
+            </span>
+        </div>
+    }
+
+    @form(action = routes.SearchController.search()) {
+    <fieldset class="">
+        <label class="label" for="userId">Tax Identifier Type:</label>
+        <div class="form-field--inline">
+            @createRadioButtonFor("SaUtr", "sautr")
+        </div>
+        <div class="form-field--inline">
+            @createRadioButtonFor("Nino", "nino")
+        </div>
+        <div class="form-field-group">
             <div class="form-field">
-                <label class="label--inline" for="userId">Tax Identifier Type</label>
-                <input type="text" id="taxId" name="taxId" required="true">
-            </div>
-            <div class="form-field">
-                <button class="button" type="submit" id="signin">Search</button>
+                <label class="label" for="userId">Tax Identifier:</label>
+                <input type="text" id="taxIdentifierValue" name="taxIdentifierValue" value="@request.getQueryString("taxIdentifierValue").getOrElse("")" required="true">
             </div>
         </div>
+        <div class="form-field">
+            <button class="button" type="submit" id="search">Search</button>
+        </div>
     </fieldset>
+    }
 }
