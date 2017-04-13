@@ -24,13 +24,13 @@
         <label class="label--inline bold">
             Tax Identifier Type:
         </label>
-        @searchTaxIdentifier.name
+        @{searchTaxIdentifier.name.toUpperCase}
     </p>
     <p>
         <label class="label--inline bold">
             Tax Identifier:
         </label>
-        @searchTaxIdentifier.value
+        @{searchTaxIdentifier.value}
     </p>
     <p>
         <label class="label--inline bold">
@@ -44,7 +44,7 @@
         </label>
         <ul class="bullets">
             @preference.taxIdentifiers.filterNot(_ == searchTaxIdentifier).map { ti =>
-                <li>@ti.name: @ti.value</li>
+                <li>@ti.name.toUpperCase(): @ti.value</li>
             }
         </ul>
     </p>
@@ -65,6 +65,6 @@
         </p>
     }
     <div style="margin-top: 100px;">
-        <a href="/paperless/admin/search?taxIdentifierType=@{searchTaxIdentifier.name}&taxId=@{searchTaxIdentifier.value}">Back to search</a>
+        <a href="/paperless/admin/search?taxIdentifierName=@{searchTaxIdentifier.name}&taxIdentifierValue=@{searchTaxIdentifier.value}">Back to search</a>
     </div>
 }

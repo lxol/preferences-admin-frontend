@@ -42,9 +42,9 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
   val search = AuthorisedAction.async {
     implicit request =>
       user =>
-        val taxIdType = request.getQueryString("taxIdentifierType").getOrElse("")
-        val taxId = request.getQueryString("taxId").getOrElse("")
-        val searchTaxIdentifier = TaxIdentifier(taxIdType, taxId)
+        val taxIdentifierName = request.getQueryString("taxIdentifierName").getOrElse("")
+        val taxIdentifierValue = request.getQueryString("taxIdentifierValue").getOrElse("")
+        val searchTaxIdentifier = TaxIdentifier(taxIdentifierName, taxIdentifierValue)
 
         searchService.getPreference(searchTaxIdentifier).map { p =>
           auditConnector.sendEvent(auditResult(user, p, searchTaxIdentifier))
@@ -58,7 +58,7 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
 
   }
 
-  def redirectToError(tag: String, taxIdentifier: TaxIdentifier): Result = Redirect(s"${routes.SearchController.showSearchPage.url}?err=$tag&taxIdentifierType=${taxIdentifier.name}&taxId=${taxIdentifier.value}")
+  def redirectToError(tag: String, taxIdentifier: TaxIdentifier): Result = Redirect(s"${routes.SearchController.showSearchPage.url}?err=$tag&taxIdentifierName=${taxIdentifier.name}&taxIdentifierValue=${taxIdentifier.value}")
 
   private def auditResult(user: User, preferenceResult: PreferenceResult, taxIdentifier: TaxIdentifier): AuditEvent = {
     preferenceResult match {

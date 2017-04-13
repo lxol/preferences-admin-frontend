@@ -61,8 +61,8 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
 
   "search(taxIdentifier)" should {
 
-    val queryParamsForValidNino = "?taxIdentifierType=nino&taxId=CE067583D"
-    val queryParamsForInvalidNino = "?taxIdentifierType=nino&taxId=1234567"
+    val queryParamsForValidNino = "?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
+    val queryParamsForInvalidNino = "?taxIdentifierName=nino&taxIdentifierValue=1234567"
 
     "return a preference if tax identifier exists" in {
       val preference = Preference(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true), Seq())
@@ -79,7 +79,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=notfound&taxIdentifierType=nino&taxId=CE067583D")
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=notfound&taxIdentifierName=nino&taxIdentifierValue=CE067583D")
     }
 
     "redirect to showSearchPage if nino value is invalid" in {
@@ -88,7 +88,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForInvalidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=invalidTaxId&taxIdentifierType=nino&taxId=1234567")
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=invalidTaxId&taxIdentifierName=nino&taxIdentifierValue=1234567")
     }
 
     "redirect to showSearchPage if query parameters are missing" in {
@@ -97,7 +97,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
       val result = searchController.search(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=genericError&taxIdentifierType=&taxId=")
+      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=genericError&taxIdentifierName=&taxIdentifierValue=")
     }
   }
 }
