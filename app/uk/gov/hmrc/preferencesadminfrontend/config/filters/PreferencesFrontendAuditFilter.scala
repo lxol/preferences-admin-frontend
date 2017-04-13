@@ -23,14 +23,16 @@ import play.api.Configuration
 import uk.gov.hmrc.play.audit.filters.FrontendAuditFilter
 import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.{AppName, RunMode}
+import uk.gov.hmrc.play.config.inject.{AppName, RunMode}
 
-class PreferencesFrontendAuditFilter @Inject()(configuration: Configuration)(implicit val mat: Materializer) extends FrontendAuditFilter with AppName with RunMode {
+class PreferencesFrontendAuditFilter @Inject()(configuration: Configuration, name: AppName, runMode: RunMode)(implicit val mat: Materializer) extends FrontendAuditFilter {
 
   val maskedFormFields = Seq()
   val applicationPort = None
-  lazy val auditConnector = AuditConnector(LoadAuditingConfig(s"$env.auditing"))
+  lazy val auditConnector = AuditConnector(LoadAuditingConfig(s"${runMode.env}.auditing"))
 
   def controllerNeedsAuditing(controllerName: String) =
     configuration.getBoolean(s"controllers.$controllerName.needsAuditing").getOrElse(true)
+
+  override def appName: String = name.appName
 }

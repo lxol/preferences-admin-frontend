@@ -18,6 +18,7 @@ import com.google.inject.AbstractModule
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.crypto.{ApplicationCrypto, ApplicationCryptoDI}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.config.inject.{DefaultRunMode, RunMode}
 import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
 import uk.gov.hmrc.play.http.logging.filters.FrontendLoggingFilter
 import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
@@ -41,6 +42,7 @@ class Module extends AbstractModule {
   }
 
   private def bindLibraries(): Unit = {
+    bind(classOf[RunMode]).to(classOf[DefaultRunMode])
     bind(classOf[ApplicationCrypto]).to(classOf[ApplicationCryptoDI])
     bind(classOf[FrontendFilters]).to(classOf[AdminFrontendGlobal])
     bind(classOf[FrontendLoggingFilter]).to(classOf[PreferencesFrontendLoggingFilter])

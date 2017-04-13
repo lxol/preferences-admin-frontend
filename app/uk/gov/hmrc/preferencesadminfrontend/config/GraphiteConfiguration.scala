@@ -23,11 +23,11 @@ import javax.inject.Inject
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
 import com.codahale.metrics.{MetricFilter, SharedMetricRegistries}
 import play.api.{Configuration, Logger}
-import uk.gov.hmrc.play.config.RunMode
+import uk.gov.hmrc.play.config.inject.RunMode
 
-class GraphiteConfiguration @Inject()(configuration: Configuration) extends RunMode {
+class GraphiteConfiguration @Inject()(configuration: Configuration, runMode: RunMode) {
 
-  private def microserviceMetricsConfig: Option[Configuration] = configuration.getConfig(s"$env.microservice.metrics")
+  private def microserviceMetricsConfig: Option[Configuration] = configuration.getConfig(s"${runMode.env}.microservice.metrics")
 
   def enabled: Boolean = metricsPluginEnabled && graphitePublisherEnabled
 

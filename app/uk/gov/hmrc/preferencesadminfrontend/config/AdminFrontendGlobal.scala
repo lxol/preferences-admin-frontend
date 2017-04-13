@@ -18,12 +18,13 @@ package uk.gov.hmrc.preferencesadminfrontend.config
 
 import javax.inject.{Inject, Singleton}
 
+import com.kenshoo.play.metrics.MetricsFilter
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.Request
 import play.api.{Application, Configuration}
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.RunMode
+import uk.gov.hmrc.play.config.inject.RunMode
 import uk.gov.hmrc.play.frontend.bootstrap.DefaultFrontendGlobal
 import uk.gov.hmrc.play.http.logging.filters.FrontendLoggingFilter
 import uk.gov.hmrc.preferencesadminfrontend.config.filters.PreferencesFrontendAuditFilter
@@ -31,9 +32,12 @@ import uk.gov.hmrc.preferencesadminfrontend.config.filters.PreferencesFrontendAu
 @Singleton
 class AdminFrontendGlobal @Inject()(
      override val loggingFilter: FrontendLoggingFilter,
+     override val metricsFilter: MetricsFilter,
      override val frontendAuditFilter: PreferencesFrontendAuditFilter,
-     override val auditConnector: AuditConnector)(implicit val messagesApi: MessagesApi) extends DefaultFrontendGlobal with RunMode with I18nSupport {
+     override val auditConnector: AuditConnector,
+     runMode: RunMode)(implicit val messagesApi: MessagesApi) extends DefaultFrontendGlobal with I18nSupport {
 
   override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html = uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message)
-  override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"$env.microservice.metrics")
+
+  override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"${runMode.env}.microservice.metrics")
 }
