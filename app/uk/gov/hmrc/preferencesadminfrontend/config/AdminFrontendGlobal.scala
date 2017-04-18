@@ -22,6 +22,7 @@ import com.kenshoo.play.metrics.MetricsFilter
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.Request
 import play.api.{Application, Configuration}
+import play.filters.csrf.CSRFFilter
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.inject.RunMode
@@ -36,6 +37,7 @@ class AdminFrontendGlobal @Inject()(
      override val frontendAuditFilter: PreferencesFrontendAuditFilter,
      override val auditConnector: AuditConnector,
      override val configuration: Configuration,
+     override val csrfFilter: CSRFFilter,
      runMode: RunMode)(implicit val messagesApi: MessagesApi) extends DefaultFrontendGlobal with I18nSupport {
 
   override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html = uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message)
