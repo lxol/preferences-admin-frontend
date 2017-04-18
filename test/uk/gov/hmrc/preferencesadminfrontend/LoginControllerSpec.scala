@@ -29,6 +29,7 @@ import play.api.i18n.MessagesApi
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
+import uk.gov.hmrc.play.config.inject.RunMode
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
@@ -110,7 +111,8 @@ trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAp
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
   val playConfiguration = app.injector.instanceOf[Configuration]
+  val runMode = app.injector.instanceOf[RunMode]
 
-  val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration)
+  val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration, runMode)
   val loginController = new LoginController(new LoginService(loginServiceConfiguration), auditConnectorMock)
 }

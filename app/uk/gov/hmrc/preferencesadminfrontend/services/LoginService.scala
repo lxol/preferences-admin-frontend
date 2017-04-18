@@ -20,6 +20,7 @@ import javax.inject.Inject
 
 import com.typesafe.config.ConfigException.Missing
 import play.api.Configuration
+import uk.gov.hmrc.play.config.inject.RunMode
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
 class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
@@ -27,10 +28,10 @@ class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
   def isAuthorised(user: User): Boolean = loginServiceConfig.authorisedUsers.contains(user)
 }
 
-class LoginServiceConfiguration @Inject()(configuration: Configuration) {
+class LoginServiceConfiguration @Inject()(configuration: Configuration, runMode: RunMode) {
 
   lazy val authorisedUsers: Seq[User] = {
-    configuration.getConfigSeq("users").fold(throw new Missing("Property users missing"))(_.map {
+    configuration.getConfigSeq(s"${runMode.env}.users").fold(throw new Missing("Property users missing"))(_.map {
       userConfig: Configuration =>
         User(
           userConfig.getString("username").getOrElse(throw new Missing("Property username missing")),
