@@ -23,7 +23,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
 
-class LoginServiceSpec extends UnitSpec with LoginServiceFixtures {
+class LoginServiceSpec extends UnitSpec with MockitoSugar {
 
   "login" should {
     "allow an authorised user into the system" in new TestCase {
@@ -35,13 +35,8 @@ class LoginServiceSpec extends UnitSpec with LoginServiceFixtures {
   }
 
   trait TestCase {
-    val authorisedUsers = Seq(new User("username", "password"))
-  }
-}
-
-trait LoginServiceFixtures extends MockitoSugar {
-
-  val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], mock[RunMode]){
-    override lazy val authorisedUsers: Seq[User] = Seq(User("username", "password"))
+    val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], mock[RunMode]){
+      override lazy val authorisedUsers: Seq[User] = Seq(User("username", "password"))
+    }
   }
 }

@@ -20,9 +20,10 @@ import javax.inject.{Inject, Singleton}
 
 import play.api.{Application, Logger}
 import uk.gov.hmrc.crypto.ApplicationCrypto
+import uk.gov.hmrc.preferencesadminfrontend.services.LoginServiceConfiguration
 
 @Singleton
-class FrontendStartup @Inject()(app: Application, appCrypto: ApplicationCrypto, graphiteConfiguration: GraphiteConfiguration) {
+class FrontendStartup @Inject()(app: Application, appCrypto: ApplicationCrypto, graphiteConfiguration: GraphiteConfiguration, loginServiceConfiguration: LoginServiceConfiguration) {
 
   lazy val appName: String = app.configuration.getString("appName").getOrElse("APP NAME NOT SET")
   lazy val appMode = app.mode
@@ -31,4 +32,5 @@ class FrontendStartup @Inject()(app: Application, appCrypto: ApplicationCrypto, 
 
   Logger.info(s"Starting frontend : $appName. : in mode : $appMode")
   appCrypto.verifyConfiguration()
+  loginServiceConfiguration.verifyConfiguration()
 }
