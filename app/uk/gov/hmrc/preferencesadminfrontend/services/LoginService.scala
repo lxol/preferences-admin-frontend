@@ -30,7 +30,7 @@ class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
 
 class LoginServiceConfiguration @Inject()(configuration: Configuration, runMode: RunMode) {
 
-  def verifyConfiguration() = authorisedUsers.nonEmpty
+  def verifyConfiguration() = if (authorisedUsers.isEmpty) throw new Missing("Property users is empty")
 
   lazy val authorisedUsers: Seq[User] = {
     configuration.getConfigSeq(s"${runMode.env}.users").fold(throw new Missing("Property users missing"))(_.map {
