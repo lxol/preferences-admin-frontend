@@ -35,6 +35,7 @@ class AdminFrontendGlobal @Inject()(
      override val metricsFilter: MetricsFilter,
      override val frontendAuditFilter: PreferencesFrontendAuditFilter,
      override val auditConnector: AuditConnector,
+     override val configuration: Configuration,
      runMode: RunMode)(implicit val messagesApi: MessagesApi) extends DefaultFrontendGlobal with I18nSupport {
 
   override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html = uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message)
