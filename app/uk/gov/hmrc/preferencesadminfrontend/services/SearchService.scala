@@ -18,6 +18,7 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.Logger
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
@@ -31,7 +32,8 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) 
   def isValid(taxId: TaxIdentifier): Boolean = {
     taxId match {
       case TaxIdentifier("nino", value) => Nino.isValid(value)
-      case _ => true
+      case TaxIdentifier("sautr", value) => value.nonEmpty
+      case _ => false
     }
   }
 
@@ -45,7 +47,10 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) 
         case (Some(preferenceDetails), taxIds) => PreferenceFound(Preference(preferenceDetails.paperless, preferenceDetails.email, taxIds))
         case (None, _) => PreferenceNotFound
       }).recover {
-        case t: Throwable => Failure(t.getMessage)
+        case t: Throwable => {
+          Logger.error(s"Unable to get preference: ${t.getMessage}", t)
+          Failure(t.getMessage)
+        }
       }
     }
   }

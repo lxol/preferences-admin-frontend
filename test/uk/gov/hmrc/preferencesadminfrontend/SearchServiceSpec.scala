@@ -129,6 +129,18 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
     "return false for an invalid nino" in new TestCase {
       searchService.isValid(invalidNino) shouldBe false
     }
+
+    "return false for an empty nino" in new TestCase {
+      searchService.isValid(TaxIdentifier("nino", "")) shouldBe false
+    }
+
+    "return false for an empty sautr" in new TestCase {
+      searchService.isValid(TaxIdentifier("sautr", "")) shouldBe false
+    }
+
+    "return false for an invalid identifier" in new TestCase {
+      searchService.isValid(TaxIdentifier("invalidId", "CE067583D")) shouldBe false
+    }
   }
 
   trait TestCase {

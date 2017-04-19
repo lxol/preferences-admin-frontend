@@ -61,14 +61,11 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
 
   "search(taxIdentifier)" should {
 
-    val queryParamsForValidNino = "?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
-    val queryParamsForInvalidNino = "?taxIdentifierName=nino&taxIdentifierValue=1234567"
-
     "return a preference if tax identifier exists" in {
       val preference = Preference(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true), Seq())
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceFound(preference)))
 
-      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
+      val result = searchController.search("nino", "CE067583D")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
     }
@@ -76,7 +73,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
     "redirect to showSearchPage if preferences does not exist" in {
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceNotFound))
 
-      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
+      val result = searchController.search("nino", "CE067583D")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
       redirectLocation(result) shouldBe Some("/paperless/admin/search?err=notfound&taxIdentifierName=nino&taxIdentifierValue=CE067583D")
@@ -85,7 +82,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
     "redirect to showSearchPage if nino value is invalid" in {
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(InvalidTaxIdentifier))
 
-      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForInvalidNino).withSession(User.sessionKey -> "user")))
+      val result = searchController.search("nino", "1234567")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
       redirectLocation(result) shouldBe Some("/paperless/admin/search?err=invalidTaxId&taxIdentifierName=nino&taxIdentifierValue=1234567")
@@ -94,7 +91,7 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
     "redirect to showSearchPage if query parameters are missing" in {
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(Failure("my-error")))
 
-      val result = searchController.search(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+      val result = searchController.search("", "")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.SEE_OTHER
       redirectLocation(result) shouldBe Some("/paperless/admin/search?err=genericError&taxIdentifierName=&taxIdentifierValue=")
