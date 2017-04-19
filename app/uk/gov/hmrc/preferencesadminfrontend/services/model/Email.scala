@@ -16,4 +16,19 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Reads}
+
 case class Email(address: String, verified: Boolean)
+
+object Email {
+  implicit val reads: Reads[Email] = (
+    (JsPath \ "email").read[String] and
+      (JsPath \ "status").read[String]
+    ) ((address, status) => {
+    val verified = (status == "verified")
+    Email(address, verified)
+  })
+}
+
+

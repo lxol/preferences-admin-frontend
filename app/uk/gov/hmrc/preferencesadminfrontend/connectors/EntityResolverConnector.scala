@@ -58,30 +58,26 @@ class EntityResolverConnector @Inject()(wsClient: WSClient, serviceConfiguration
     }
   }
 
-    def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
-      val request = wsClient.url(s"$serviceUrl/portal/preferences/${regimeFor(taxId)}/${taxId.value}")
-      val response = request.get()
-      response.map {
-        r =>
-          r.status match {
-            case Status.OK => r.json.asOpt[PreferenceDetails]
-            case Status.NOT_FOUND => None
-            case errorStatus => throw new Throwable(s"entity-resolver returned $errorStatus")
-          }
-      }
+  def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
+    val request = wsClient.url(s"$serviceUrl/portal/preferences/${regimeFor(taxId)}/${taxId.value}")
+    val response = request.get()
+    response.map {
+      r =>
+        r.status match {
+          case Status.OK => r.json.asOpt[PreferenceDetails]
+          case Status.NOT_FOUND => None
+          case errorStatus => throw new Throwable(s"entity-resolver returned $errorStatus")
+        }
     }
   }
+}
 
-  case class PreferenceDetails(paperless: Boolean, email: Email)
+case class PreferenceDetails(paperless: Boolean, email: Option[Email])
 
-  object PreferenceDetails {
+object PreferenceDetails {
 
-    implicit val reads: Reads[PreferenceDetails] = (
-      (JsPath \ "digital").read[Boolean] and
-        (JsPath \ "email" \ "email").read[String] and
-        (JsPath \ "email" \ "status").read[String]
-      ) ((paperless, address, status) => {
-      val verified = status == "verified"
-      PreferenceDetails(paperless, Email(address, verified))
-    })
-  }
+  implicit val reads: Reads[PreferenceDetails] = (
+    (JsPath \ "digital").read[Boolean] and
+      (JsPath \ "email").readNullable[Email]
+    ) ((paperless, email) => PreferenceDetails(paperless, email))
+}

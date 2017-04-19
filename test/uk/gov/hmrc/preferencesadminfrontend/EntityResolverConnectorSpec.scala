@@ -96,9 +96,9 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
 
   "getPreferenceDetails" should {
 
-    "return details if sautr exists" in new TestCase {
+    "return paperless preference true and valid email address and verification true if user is opted in for saUtr" in new TestCase {
       val expectedPath = s"/portal/preferences/sa/${sautr.value}"
-      val responseJson = preferenceDetailsResponseFor(true, true)
+      val responseJson = preferenceDetailsResponseForOptedIn(true)
       val response = wsResponseFor(responseJson, Status.OK)
 
       when(wsClient.url(expectedPath)).thenReturn(mockRequest)
@@ -109,12 +109,43 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
 
       result shouldBe defined
       result.get.paperless shouldBe true
-      result.get.email shouldBe Email("john.doe@digital.hmrc.gov.uk", true)
+      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
     }
 
-    "return details if nino exists" in new TestCase {
+    "return paperless preference true and valid email address and verification false if user is opted in for saUtr" in new TestCase {
+      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val responseJson = preferenceDetailsResponseForOptedIn(false)
+      val response = wsResponseFor(responseJson, Status.OK)
+
+      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
+      when(mockRequest.get()).thenReturn(Future.successful(response))
+
+
+      val result = entityResolverConnector.getPreferenceDetails(sautr).futureValue
+
+      result shouldBe defined
+      result.get.paperless shouldBe true
+      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", false))
+    }
+
+    "return paperless preference false and email as 'None' if user is opted out for saUtr" in new TestCase {
+      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val responseJson = preferenceDetailsResponseForOptedOut()
+      val response = wsResponseFor(responseJson, Status.OK)
+
+      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
+      when(mockRequest.get()).thenReturn(Future.successful(response))
+
+      val result = entityResolverConnector.getPreferenceDetails(sautr).futureValue
+
+      result shouldBe defined
+      result.get.paperless shouldBe false
+      result.get.email shouldBe None
+    }
+
+    "return email address and verification if user is opted in for nino" in new TestCase {
       val expectedPath = s"/portal/preferences/paye/${nino.value}"
-      val responseJson = preferenceDetailsResponseFor(true, true)
+      val responseJson = preferenceDetailsResponseForOptedIn(true)
       val response = wsResponseFor(responseJson, Status.OK)
 
       when(wsClient.url(expectedPath)).thenReturn(mockRequest)
@@ -125,7 +156,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
 
       result shouldBe defined
       result.get.paperless shouldBe true
-      result.get.email shouldBe Email("john.doe@digital.hmrc.gov.uk", true)
+      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
     }
 
     "return None if taxId does not exist" in new TestCase {
@@ -171,16 +202,26 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
       taxIdsJson.foldLeft(Json.obj("_id" -> "6a048719-3d4b-4a3e-9440-17b238807bc9"))(_ + _)
     }
 
-    def preferenceDetailsResponseFor(paperless: Boolean, emailVerified: Boolean) = {
-     Json.parse( s"""
-         |{
-         |  "digital": $paperless,
-         |  "email": {
-         |    "email": "john.doe@digital.hmrc.gov.uk",
-         |    "status": "${if (emailVerified) "verified" else ""}",
-         |    "mailboxFull": false
-         |  }
-         |}
+    def preferenceDetailsResponseForOptedIn(emailVerified: Boolean) = {
+      Json.parse(
+        s"""
+           |{
+           |  "digital": true,
+           |  "email": {
+           |    "email": "john.doe@digital.hmrc.gov.uk",
+           |    "status": "${if (emailVerified) "verified" else ""}",
+           |    "mailboxFull": false
+           |  }
+           |}
+       """.stripMargin)
+    }
+
+    def preferenceDetailsResponseForOptedOut() = {
+      Json.parse(
+        s"""
+           |{
+           |  "digital": false
+           |}
        """.stripMargin)
     }
 

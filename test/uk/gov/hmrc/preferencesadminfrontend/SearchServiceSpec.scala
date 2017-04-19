@@ -41,9 +41,9 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
 
     implicit val hc = HeaderCarrier()
 
-    "return preferences for nino user when it exists" in new TestCase {
+    "return preference for nino user when it exists" in new TestCase {
 
-      val preferenceDetails = Some(PreferenceDetails(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true)))
+      val preferenceDetails = Some(PreferenceDetails(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true))))
       when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(preferenceDetails))
       val taxIdentifiers = Seq(validNino, validSaUtr)
       when(entityResolverConnector.getTaxIdentifiers(validNino)).thenReturn(Future.successful(taxIdentifiers))
@@ -53,15 +53,15 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       result match {
         case PreferenceFound(preference) => {
           preference.paperless shouldBe true
-          preference.email shouldBe Email("john.doe@digital.hmrc.gov.uk", true)
+          preference.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
           preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
         }
         case _ => fail()
       }
     }
 
-    "return preferences for utr user when it exists" in new TestCase {
-      val preferenceDetails = Some(PreferenceDetails(paperless = true, Email("john.doe@digital.hmrc.gov.uk", verified = true)))
+    "return preference for utr user when it exists" in new TestCase {
+      val preferenceDetails = Some(PreferenceDetails(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true))))
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
       val taxIdentifiers = Seq(validNino, validSaUtr)
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
@@ -71,7 +71,25 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       result match {
         case PreferenceFound(preference) => {
           preference.paperless shouldBe true
-          preference.email shouldBe Email("john.doe@digital.hmrc.gov.uk", true)
+          preference.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
+          preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
+        }
+        case _ => fail()
+      }
+    }
+
+    "return preference for utr user who has opted out" in new TestCase {
+      val optedOutPreferenceDetails = Some(PreferenceDetails(paperless = false, None))
+      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails))
+      val taxIdentifiers = Seq(validNino, validSaUtr)
+      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
+
+      val result = searchService.getPreference(validSaUtr).futureValue
+
+      result match {
+        case PreferenceFound(preference) => {
+          preference.paperless shouldBe false
+          preference.email shouldBe None
           preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
         }
         case _ => fail()

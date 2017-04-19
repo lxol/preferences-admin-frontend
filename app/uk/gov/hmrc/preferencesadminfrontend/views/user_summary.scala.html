@@ -36,7 +36,12 @@
         <label class="label--inline bold">
             Customer's email:
         </label>
-        @{preference.email.address}
+        @{
+            preference.email match {
+                case Some(email) => email.address
+                case None => "Not provided"
+            }
+        }
     </p>
     <p>
         <label class="label--inline bold">
@@ -60,7 +65,10 @@
                 Verified:
             </label>
             @{
-                if(preference.email.verified) "yes" else "no"
+                preference.email match {
+                    case Some(email) => if(email.verified) "yes" else "no"
+                    case None => "Not applicable"
+                }
             }
         </p>
     }

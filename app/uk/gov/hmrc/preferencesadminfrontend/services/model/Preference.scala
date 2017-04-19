@@ -16,4 +16,4 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
-case class Preference(paperless: Boolean, email: Email, taxIdentifiers: Seq[TaxIdentifier])
+case class Preference(paperless: Boolean, email: Option[Email], taxIdentifiers: Seq[TaxIdentifier])
