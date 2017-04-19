@@ -1,0 +1,2 @@
+error.preference_not_found=No paperless preference found for that identifier.
+error.name_invalid=Invalid tax identifier type selected.
