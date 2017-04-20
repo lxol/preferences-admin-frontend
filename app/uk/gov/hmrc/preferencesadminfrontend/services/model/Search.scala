@@ -16,10 +16,18 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
-case class TaxIdentifier(name: String, value: String) {
-  val regime = name match {
-    case "sautr" => "sa"
-    case "nino" => "paye"
-  }
-}
+import play.api.data.Form
+import play.api.data.Forms.{mapping, text, nonEmptyText}
 
+
+object Search {
+
+  def apply() = Form[TaxIdentifier](
+    mapping(
+      "name" -> text
+        .verifying("error.name_invalid", name => name == "sautr" || name == "nino"),
+      "value" -> nonEmptyText
+    )(TaxIdentifier.apply)(TaxIdentifier.unapply))
+
+
+}

@@ -3,5 +3,5 @@ GET         /assets/*file                            controllers.Assets.at(path=
 POST        /logout                                  uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.logout
 POST        /login                                   uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
 GET         /                                        uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.showLoginPage
-GET         /search                                  uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.showSearchPage
-GET         /search/q                                uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.search(taxIdentifierName: String ?= "", taxIdentifierValue: String ?= "")
+GET         /search                                  uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.showSearchPage(taxIdentifierName: String ?= "", taxIdentifierValue: String ?= "")
+GET         /search/q                                uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.search

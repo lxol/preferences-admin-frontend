@@ -27,7 +27,7 @@ import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services._
-import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{Search, TaxIdentifier}
 
 import scala.concurrent.Future
 
@@ -35,35 +35,36 @@ import scala.concurrent.Future
 class SearchController @Inject()(auditConnector: AuditConnector, searchService: SearchService)
                                 (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
 
-  val showSearchPage = AuthorisedAction.async {
-    implicit request => user => Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification()))
+  def showSearchPage(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
+    implicit request => user => Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bind(Map("name" -> taxIdentifierName, "value" -> taxIdentifierValue)).discardingErrors)))
   }
 
-  def search(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
+  def search = AuthorisedAction.async {
     implicit request =>
       user =>
-        val searchTaxIdentifier = TaxIdentifier(taxIdentifierName, taxIdentifierValue)
+        Search().bindFromRequest()(request).fold(
+          errors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(errors))),
+          searchTaxIdentifier => {
 
-        searchService.getPreference(searchTaxIdentifier).map { p =>
-          auditConnector.sendEvent(auditResult(user, p, searchTaxIdentifier))
-          p match {
-            case PreferenceFound(preference) => Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
-            case PreferenceNotFound => redirectToError("notfound", searchTaxIdentifier)
-            case InvalidTaxIdentifier => redirectToError("invalidTaxId", searchTaxIdentifier)
-            case Failure(reason) => redirectToError("genericError", searchTaxIdentifier)
+            searchService.getPreference(searchTaxIdentifier).map { p =>
+              auditConnector.sendEvent(auditResult(user, p, searchTaxIdentifier))
+              p match {
+                case PreferenceFound(preference) => Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
+                case PreferenceNotFound =>
+                  BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest()(request).withError("value", "error.preference_not_found")))
+              }
+            }
           }
-        }
+        )
 
   }
 
-  def redirectToError(tag: String, taxIdentifier: TaxIdentifier): Result = Redirect(s"${routes.SearchController.showSearchPage.url}?err=$tag&taxIdentifierName=${taxIdentifier.name}&taxIdentifierValue=${taxIdentifier.value}")
+  def redirectToError(tag: String, taxIdentifier: TaxIdentifier): Result = Redirect(routes.SearchController.showSearchPage(taxIdentifier.name, taxIdentifier.value).url)
 
   private def auditResult(user: User, preferenceResult: PreferenceResult, taxIdentifier: TaxIdentifier): AuditEvent = {
     preferenceResult match {
       case PreferenceFound(_) => createSearchEvent(user.username, taxIdentifier, successful = true, "PreferenceFound")
       case PreferenceNotFound => createSearchEvent(user.username, taxIdentifier, successful = true, "PreferenceNotFound")
-      case InvalidTaxIdentifier => createSearchEvent(user.username, taxIdentifier, successful = false, "InvalidTaxIdentifier")
-      case Failure(reason) => createSearchEvent(user.username, taxIdentifier, successful = false, "Failure")
     }
   }
 

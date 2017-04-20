@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend
 
+import akka.stream.Materializer
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
@@ -45,56 +46,33 @@ class SearchControllerSpec extends SearchControllerCase  with CSRFTest with Scal
   "showSearchPage" should {
 
     "return ok if session is authorised" in {
-      val result = searchController.showSearchPage(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+      val result = searchController.showSearchPage("","")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
     }
 
     "redirect to login page if not authorised" in {
-      val result = searchController.showSearchPage(addToken(FakeRequest().withSession()))
+      val result = searchController.showSearchPage("","")(addToken(FakeRequest().withSession()))
 
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain("Location" -> "/paperless/admin")
     }
-
   }
 
   "search(taxIdentifier)" should {
 
+    val queryParamsForValidNino = "?name=nino&value=CE067583D"
+    val queryParamsForInvalidNino = "?name=nino&value=1234567"
+
     "return a preference if tax identifier exists" in {
+
       val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceFound(preference)))
 
-      val result = searchController.search("nino", "CE067583D")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
-    }
-
-    "redirect to showSearchPage if preferences does not exist" in {
-      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(PreferenceNotFound))
-
-      val result = searchController.search("nino", "CE067583D")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
-
-      status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=notfound&taxIdentifierName=nino&taxIdentifierValue=CE067583D")
-    }
-
-    "redirect to showSearchPage if nino value is invalid" in {
-      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(InvalidTaxIdentifier))
-
-      val result = searchController.search("nino", "1234567")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
-
-      status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=invalidTaxId&taxIdentifierName=nino&taxIdentifierValue=1234567")
-    }
-
-    "redirect to showSearchPage if query parameters are missing" in {
-      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(Failure("my-error")))
-
-      val result = searchController.search("", "")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
-
-      status(result) shouldBe Status.SEE_OTHER
-      redirectLocation(result) shouldBe Some("/paperless/admin/search?err=genericError&taxIdentifierName=&taxIdentifierValue=")
+      bodyOf(result).futureValue should include ("john.doe@digital.hmrc.gov.uk")
     }
   }
 }
@@ -104,6 +82,7 @@ trait SearchControllerCase extends UnitSpec with GuiceOneAppPerSuite with Mockit
 
   implicit val appConfig = mock[FrontendAppConfig]
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
+  implicit val materializer = app.injector.instanceOf[Materializer]
 
   when(appConfig.analyticsToken).thenReturn("")
   when(appConfig.analyticsHost).thenReturn("")
