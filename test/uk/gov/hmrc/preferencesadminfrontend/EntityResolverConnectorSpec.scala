@@ -19,11 +19,11 @@ package uk.gov.hmrc.preferencesadminfrontend
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status
 import play.api.libs.json._
-import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 import uk.gov.hmrc.play.config.inject.ServicesConfig
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
@@ -32,19 +32,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
 
-class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
+class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
   "getTaxIdentifiers" should {
     "return only sautr if nino does not exist" in new TestCase {
       val expectedPath = s"/entity-resolver/sa/${sautr.value}"
       val responseJson = taxIdentifiersResponseFor(sautr)
-      val response = wsResponseFor(responseJson, Status.OK)
 
-      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
-      when(mockRequest.get()).thenReturn(Future.successful(response))
-
-
-      val result = entityResolverConnector.getTaxIdentifiers(sautr).futureValue
+      val result = createEntityConnector(expectedPath, responseJson, Status.OK).getTaxIdentifiers(sautr).futureValue
 
       result.size shouldBe (1)
       result should contain(sautr)
@@ -53,12 +48,8 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
     "return all tax identifiers for sautr" in new TestCase {
       val expectedPath = s"/entity-resolver/sa/${sautr.value}"
       val responseJson = taxIdentifiersResponseFor(sautr, nino)
-      val response = wsResponseFor(responseJson, Status.OK)
 
-      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
-      when(mockRequest.get()).thenReturn(Future.successful(response))
-
-      val result = entityResolverConnector.getTaxIdentifiers(sautr).futureValue
+      val result = createEntityConnector(expectedPath, responseJson, Status.OK).getTaxIdentifiers(sautr).futureValue
 
       result.size shouldBe (2)
       result should contain(nino)
@@ -68,12 +59,8 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
     "return all tax identifiers for nino" in new TestCase {
       val expectedPath = s"/entity-resolver/paye/${nino.value}"
       val responseJson = taxIdentifiersResponseFor(sautr, nino)
-      val response = wsResponseFor(responseJson, Status.OK)
 
-      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
-      when(mockRequest.get()).thenReturn(Future.successful(response))
-
-      val result = entityResolverConnector.getTaxIdentifiers(nino).futureValue
+      val result = createEntityConnector(expectedPath, responseJson, Status.OK).getTaxIdentifiers(nino).futureValue
 
       result.size shouldBe (2)
       result should contain(nino)
@@ -82,12 +69,8 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
 
     "return empty sequence" in new TestCase {
       val expectedPath = s"/entity-resolver/paye/${nino.value}"
-      val response = wsResponseFor(emptyJson, Status.NOT_FOUND)
 
-      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
-      when(mockRequest.get()).thenReturn(Future.successful(response))
-
-      val result = entityResolverConnector.getTaxIdentifiers(nino).futureValue
+      val result = createEntityConnector(expectedPath, emptyJson, Status.NOT_FOUND).getTaxIdentifiers(nino).futureValue
 
       result.size shouldBe (0)
     }
@@ -99,13 +82,8 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
     "return details if sautr exists" in new TestCase {
       val expectedPath = s"/portal/preferences/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseFor(true, true)
-      val response = wsResponseFor(responseJson, Status.OK)
 
-      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
-      when(mockRequest.get()).thenReturn(Future.successful(response))
-
-
-      val result = entityResolverConnector.getPreferenceDetails(sautr).futureValue
+      val result = createEntityConnector(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
       result.get.paperless shouldBe true
@@ -115,13 +93,8 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
     "return details if nino exists" in new TestCase {
       val expectedPath = s"/portal/preferences/paye/${nino.value}"
       val responseJson = preferenceDetailsResponseFor(true, true)
-      val response = wsResponseFor(responseJson, Status.OK)
 
-      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
-      when(mockRequest.get()).thenReturn(Future.successful(response))
-
-
-      val result = entityResolverConnector.getPreferenceDetails(nino).futureValue
+      val result = createEntityConnector(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
 
       result shouldBe defined
       result.get.paperless shouldBe true
@@ -130,13 +103,8 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
 
     "return None if taxId does not exist" in new TestCase {
       val expectedPath = s"/portal/preferences/sa/${sautr.value}"
-      val response = wsResponseFor(emptyJson, Status.NOT_FOUND)
 
-      when(wsClient.url(expectedPath)).thenReturn(mockRequest)
-      when(mockRequest.get()).thenReturn(Future.successful(response))
-
-
-      val result = entityResolverConnector.getPreferenceDetails(sautr).futureValue
+      val result = createEntityConnector(expectedPath, emptyJson, Status.NOT_FOUND).getPreferenceDetails(sautr).futureValue
 
       result should not be defined
     }
@@ -148,20 +116,29 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
 
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
-    lazy val serviceConfig = mock[ServicesConfig]
-    lazy val wsClient = mock[WSClient]
-    lazy val mockRequest = mock[WSRequest]
+    lazy val serviceConfig = app.injector.instanceOf[ServicesConfig]
+    lazy val mockResponse = mock[HttpResponse]
     val emptyJson = Json.obj()
 
-    lazy val entityResolverConnector = new EntityResolverConnector(wsClient, serviceConfig) {
-      override def serviceUrl: String = ""
+
+    def createEntityConnector(expectedPath: String, jsonBody: JsValue, status: Int): EntityResolverConnector = {
+      new EntityResolverConnector(serviceConfig) {
+        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+          url should include(expectedPath)
+          setupResponseFor(jsonBody, status)
+          Future.successful(mockResponse)
+        }
+      }
     }
 
-    def wsResponseFor(jsonBody: JsValue, status: Int): WSResponse = {
-      val myMock = mock[WSResponse]
-      when(myMock.json).thenReturn(jsonBody)
-      when(myMock.status).thenReturn(status)
-      myMock
+    lazy val entityResolverConnector = new EntityResolverConnector(serviceConfig) {
+      override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = mockResponse
+    }
+
+    def setupResponseFor(jsonBody: JsValue, status: Int): Unit = {
+      when(mockResponse.json).thenReturn(jsonBody)
+      when(mockResponse.body).thenReturn(jsonBody.toString())
+      when(mockResponse.status).thenReturn(status)
     }
 
     def taxIdentifiersResponseFor(taxIds: TaxIdentifier*) = {
@@ -172,15 +149,16 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures {
     }
 
     def preferenceDetailsResponseFor(paperless: Boolean, emailVerified: Boolean) = {
-     Json.parse( s"""
-         |{
-         |  "digital": $paperless,
-         |  "email": {
-         |    "email": "john.doe@digital.hmrc.gov.uk",
-         |    "status": "${if (emailVerified) "verified" else ""}",
-         |    "mailboxFull": false
-         |  }
-         |}
+      Json.parse(
+        s"""
+           |{
+           |  "digital": $paperless,
+           |  "email": {
+           |    "email": "john.doe@digital.hmrc.gov.uk",
+           |    "status": "${if (emailVerified) "verified" else ""}",
+           |    "mailboxFull": false
+           |  }
+           |}
        """.stripMargin)
     }
 

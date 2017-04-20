@@ -89,58 +89,6 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       result shouldBe PreferenceNotFound
     }
 
-    "return InvalidTaxIdentifier if the nino is invalid" in new TestCase {
-      val result = searchService.getPreference(invalidNino).futureValue
-
-      verifyZeroInteractions(entityResolverConnector)
-      result shouldBe InvalidTaxIdentifier
-    }
-
-    "return ErrorMessage if something goes wrong when calling downstream dependencies" in new TestCase {
-      val taxIdentifiers = Seq()
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.failed(new Throwable("my-message")))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
-
-      val result = searchService.getPreference(validSaUtr).futureValue
-
-      result should matchPattern { case Failure(_) => }
-    }
-
-    "return ErrorMessage if something goes wrong when calling downstream dependencies v2" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(None))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenThrow(new RuntimeException("my-message"))
-
-      val result = searchService.getPreference(validSaUtr).futureValue
-
-      result should matchPattern { case Failure(_) => }
-    }
-  }
-
-  "isValid" should {
-
-    "return true for non nino tax identifiers" in new TestCase {
-      searchService.isValid(validSaUtr) shouldBe true
-    }
-
-    "return true for a valid nino" in new TestCase {
-      searchService.isValid(validNino) shouldBe true
-    }
-
-    "return false for an invalid nino" in new TestCase {
-      searchService.isValid(invalidNino) shouldBe false
-    }
-
-    "return false for an empty nino" in new TestCase {
-      searchService.isValid(TaxIdentifier("nino", "")) shouldBe false
-    }
-
-    "return false for an empty sautr" in new TestCase {
-      searchService.isValid(TaxIdentifier("sautr", "")) shouldBe false
-    }
-
-    "return false for an invalid identifier" in new TestCase {
-      searchService.isValid(TaxIdentifier("invalidId", "CE067583D")) shouldBe false
-    }
   }
 
   trait TestCase {

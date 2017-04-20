@@ -16,5 +16,10 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
-case class TaxIdentifier(name: String, value: String)
+case class TaxIdentifier(name: String, value: String) {
+  val regime = name match {
+    case "sautr" => "sa"
+    case "nino" => "paye"
+  }
+}
 
