@@ -14,7 +14,7 @@
  * limitations under the License.
  *@
 
-@import helper._
+@import uk.gov.hmrc.play.views.html.helpers._
 @import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 @import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 @import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
@@ -23,31 +23,26 @@
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "Login", bodyClasses = None) {
     <h1>Login</h1>
     <p>Enter your details to access the admin console</p>
-    @form(action = CSRF(routes.LoginController.login)) {
-        <fieldset>
-            @if(userForm.hasErrors) {
-                <div style="margin-bottom: 30px">
-                Login failed:
-                @for(error <- userForm.errors) {
-                    <span style="color: darkred;">
-                        @Messages(error.messages, error.args)
-                    </span>
-                }
-                </div>
+    @form(action = routes.LoginController.login) {
+        <fieldset @if(userForm.hasGlobalErrors) { class="form-field--error" }>
+            @for(error <- userForm.globalErrors) {
+                <span class="error-notification">@Messages(error.message)</span>
             }
-            <div class="form-field-group">
-                <div class="form-field">
-                    <label class="label--inline" for="userId">User ID</label>
-                    <input type="text" id="username" name="username" required="true">
-                </div>
-                <div class="form-field">
-                    <label class="label--inline" for="password">Password</label>
-                    <input type="password" id="password" name="password" required="true">
-                </div>
-                <div class="form-field">
-                    <button class="button" type="submit" id="signin">Sign in</button>
-                </div>
-            </div>
+            @input(userForm("username"),
+                '_label -> "User ID",
+                '_divClass -> "form-field",
+                '_type -> "text",
+                '_inputClass -> "input--medium input--cleared"
+            )
+            @input(userForm("password"),
+                '_label -> "Password",
+                '_divClass -> "form-field",
+                '_type -> "password",
+                '_inputClass -> "input--medium input--cleared"
+            )
         </fieldset>
+        <div class="form-field">
+            <button class="button" type="submit" id="signin">Sign in</button>
+        </div>
     }
 }
