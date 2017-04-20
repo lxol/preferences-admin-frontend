@@ -19,15 +19,14 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 import javax.inject.{Inject, Singleton}
 
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.Result
+import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.{AuditEvent, DataEvent}
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
-import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services._
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Search, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, Search, TaxIdentifier}
 
 import scala.concurrent.Future
 
@@ -42,36 +41,35 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
   def search = AuthorisedAction.async {
     implicit request =>
       user =>
-        Search().bindFromRequest()(request).fold(
+        Search().bindFromRequest.fold(
           errors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(errors))),
           searchTaxIdentifier => {
 
-            searchService.getPreference(searchTaxIdentifier).map { p =>
-              auditConnector.sendEvent(auditResult(user, p, searchTaxIdentifier))
-              p match {
-                case PreferenceFound(preference) => Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
-                case PreferenceNotFound =>
-                  BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest()(request).withError("value", "error.preference_not_found")))
-              }
+            searchService.getPreference(searchTaxIdentifier).map {
+              case Some(preference) =>
+                auditConnector.sendEvent(createSearchEvent(user.username, searchTaxIdentifier, Some(preference)))
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
+              case None =>
+                auditConnector.sendEvent(createSearchEvent(user.username, searchTaxIdentifier, None))
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
             }
           }
         )
 
   }
 
-  def redirectToError(tag: String, taxIdentifier: TaxIdentifier): Result = Redirect(routes.SearchController.showSearchPage(taxIdentifier.name, taxIdentifier.value).url)
+  def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, preference: Option[Preference]): ExtendedDataEvent = {
+    val details = Json.obj(
+      "user" -> username,
+      "query" -> Json.toJson(taxIdentifier),
+      "result" -> preference.fold("Not found")(_ => "Found")
+    ) ++ preference.fold(Json.obj())(p => Json.obj("preference" -> Json.toJson(p)))
 
-  private def auditResult(user: User, preferenceResult: PreferenceResult, taxIdentifier: TaxIdentifier): AuditEvent = {
-    preferenceResult match {
-      case PreferenceFound(_) => createSearchEvent(user.username, taxIdentifier, successful = true, "PreferenceFound")
-      case PreferenceNotFound => createSearchEvent(user.username, taxIdentifier, successful = true, "PreferenceNotFound")
-    }
+    ExtendedDataEvent(
+      auditSource = appName,
+      auditType = "TxSucceeded",
+      detail = details,
+      tags = Map("transactionName" -> "Paperless opt out search")
+    )
   }
-
-  def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, successful: Boolean, searchResult: String) = DataEvent(
-    auditSource = appName,
-    auditType = if (successful) "TxSucceeded" else "TxFailed",
-    detail = Map("user" -> username, taxIdentifier.name -> taxIdentifier.value, "result" -> searchResult),
-    tags = Map("transactionName" -> "Search")
-  )
 }

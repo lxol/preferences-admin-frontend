@@ -27,22 +27,11 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) {
 
-  def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[PreferenceResult] = {
-      for {
-        preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
-        taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
-      } yield (preferenceDetail, taxIdentifiers) match {
-        case (Some(preferenceDetails), taxIds) => PreferenceFound(Preference(preferenceDetails.paperless, preferenceDetails.email, taxIds))
-        case (None, _) => PreferenceNotFound
-      }
+  def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
+    for {
+      preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
+      taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
+    } yield preferenceDetail.map(details => Preference(details.paperless, details.email, taxIdentifiers))
   }
 
 }
-
-trait PreferenceResult
-
-case class PreferenceFound(preference: Preference) extends PreferenceResult
-
-case object PreferenceNotFound extends PreferenceResult
-
-case class Failure(reason: String) extends PreferenceResult

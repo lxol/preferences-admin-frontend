@@ -17,11 +17,13 @@
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Reads}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
 
 case class Email(address: String, verified: Boolean)
 
 object Email {
+  implicit val writes: Writes[Email] = Json.writes[Email]
+
   implicit val reads: Reads[Email] = (
     (JsPath \ "email").read[String] and
       (JsPath \ "status").read[String]

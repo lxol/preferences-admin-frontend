@@ -51,7 +51,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       val result = searchService.getPreference(validNino).futureValue
 
       result match {
-        case PreferenceFound(preference) => {
+        case Some(preference) => {
           preference.paperless shouldBe true
           preference.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
           preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
@@ -69,7 +69,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       val result = searchService.getPreference(validSaUtr).futureValue
 
       result match {
-        case PreferenceFound(preference) => {
+        case Some(preference) => {
           preference.paperless shouldBe true
           preference.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
           preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
@@ -87,7 +87,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       val result = searchService.getPreference(validSaUtr).futureValue
 
       result match {
-        case PreferenceFound(preference) => {
+        case Some(preference) => {
           preference.paperless shouldBe false
           preference.email shouldBe None
           preference.taxIdentifiers shouldBe Seq(validNino, validSaUtr)
@@ -96,7 +96,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
       }
     }
 
-    "return PreferenceNotFound if the saUtr identifier does not exist" in new TestCase {
+    "return None if the saUtr identifier does not exist" in new TestCase {
       val preferenceDetails = None
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
       val taxIdentifiers = Seq()
@@ -104,7 +104,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
 
       val result = searchService.getPreference(validSaUtr).futureValue
 
-      result shouldBe PreferenceNotFound
+      result shouldBe None
     }
 
   }

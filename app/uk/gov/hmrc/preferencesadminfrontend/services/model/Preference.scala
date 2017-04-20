@@ -16,4 +16,10 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
+import play.api.libs.json.Json
+
 case class Preference(paperless: Boolean, email: Option[Email], taxIdentifiers: Seq[TaxIdentifier])
+
+object Preference {
+  implicit val format = Json.format[Preference]
+}
