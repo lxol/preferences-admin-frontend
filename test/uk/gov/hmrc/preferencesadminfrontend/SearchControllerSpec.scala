@@ -17,9 +17,10 @@
 package uk.gov.hmrc.preferencesadminfrontend
 
 import akka.stream.Materializer
+import org.jsoup.Jsoup
 import org.mockito.ArgumentMatchers.{any, argThat}
 import org.mockito.Mockito.when
-import org.mockito.{ArgumentMatcher, Mockito}
+import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -27,7 +28,7 @@ import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
 import play.api.libs.json.Json
-import play.api.test.FakeRequest
+import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{headers, _}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -84,6 +85,23 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       Mockito.verify(auditConnectorMock).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
+
+    "include a hidden form to opt the user out" in new TestCase {
+
+      val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
+      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(Some(preference)))
+
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.OK
+      private val document = Jsoup.parse(bodyOf(result).futureValue)
+
+      document.body().getElementById("confirm").attr("style") shouldBe "display:none;"
+      document.body().getElementById("confirm").getElementsByTag("form").attr("action") shouldBe
+        "/paperless/admin/search/opt-out?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
+
+    }
+
     "return a not found error message if the preference is not found" in new TestCase {
       when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(None))
       Mockito.reset(auditConnectorMock)
@@ -132,6 +150,19 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
 
     }
 
+  }
+
+  "submit opt out request" should {
+    "redirect to the confirm page" in new TestCase with ScalaFutures {
+      val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
+      when(searchServiceMock.optOut(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")))(any(), any())).thenReturn(Future.successful(true))
+
+      val result = searchController.optOut("nino", "CE067583D")(addToken(
+        FakeRequest(Helpers.POST, controllers.routes.SearchController.optOut("nino", "CE067583D").url).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe SEE_OTHER
+      header("Location", result) shouldBe Some(controllers.routes.SearchController.confirmed("nino", "CE067583D").url)
+    }
   }
 }
 

@@ -18,18 +18,20 @@ package uk.gov.hmrc.preferencesadminfrontend.connectors
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.Logger
+import play.api.http.Status
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.play.config.inject.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.hooks.HttpHook
-import uk.gov.hmrc.play.http.ws.WSGet
+import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig) extends WSGet {
+class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig) extends WSGet with WSPost {
 
   implicit val ef = Entity.formats
 
@@ -54,6 +56,22 @@ class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig) ex
     GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {
       case ex: BadRequestException => None
     }
+  }
+
+  def optOut(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+
+    def warnNotOptedOut(status: Int) = Logger.warn(s"Unable to manually opt-out ${taxId.name} user with id ${taxId.value}. Status: $status")
+
+    POSTEmpty(s"/entity-resolver-admin/manual-opt-out/${taxId.regime}/${taxId.value}")
+      .map(_ => true)
+      .recover {
+        case ex: NotFoundException =>
+          warnNotOptedOut(404)
+          false
+        case ex@Upstream4xxResponse(_, Status.CONFLICT | Status.PRECONDITION_FAILED, _, _) =>
+          warnNotOptedOut(ex.upstreamResponseCode)
+          false
+      }
   }
 }
 

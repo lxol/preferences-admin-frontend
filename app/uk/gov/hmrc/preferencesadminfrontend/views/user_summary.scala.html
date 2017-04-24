@@ -14,6 +14,8 @@
  * limitations under the License.
  *@
 
+@import uk.gov.hmrc.play.views.html.helpers._
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 @import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 @import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
 @(searchTaxIdentifier: TaxIdentifier, preference: Preference)(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
@@ -72,6 +74,32 @@
             }
         </p>
     }
+    <div id="optOutButton" class="form-field">
+        <button class="button" type="submit" id="search" onclick="showDiv()" @if(!preference.paperless) {disabled}>Opt out</button>
+    </div>
+
+    <script>
+        function showDiv() {
+            document.getElementById('confirm').style.display = "block";
+            document.getElementById('optOutButton').style.display = "none";
+        }
+        function hideDiv() {
+            document.getElementById('confirm').style.display = "none";
+            document.getElementById('optOutButton').style.display = "block";
+        }
+    </script>
+
+    <div id="confirm" style="display:none;">
+        @form(action = routes.SearchController.optOut(searchTaxIdentifier.name, searchTaxIdentifier.value)) {
+        <div class="form-field">
+            <label class="label--inline bold">
+                Are you sure you wish to opt this user out?
+            </label>
+            <button class="button" type="submit">Confirm</button>
+            <button class="button" type="reset" onclick="hideDiv()">Cancel</button>
+        </div>
+        }
+    </div>
     <div style="margin-top: 100px;">
         <a href="/paperless/admin/search?taxIdentifierName=@{searchTaxIdentifier.name}&taxIdentifierValue=@{searchTaxIdentifier.value}">Back to search</a>
     </div>

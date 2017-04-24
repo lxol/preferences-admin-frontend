@@ -58,6 +58,17 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
 
   }
 
+
+  def optOut(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async{
+    implicit request => user =>
+      searchService.optOut(TaxIdentifier(taxIdentifierName,taxIdentifierValue)).map(_ => Redirect(routes.SearchController.confirmed(taxIdentifierName, taxIdentifierValue)))
+  }
+
+
+  def confirmed(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async{
+    implicit request => user => Future.successful(Ok("DONE"))
+  }
+
   def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, preference: Option[Preference]): ExtendedDataEvent = {
     val details = Json.obj(
       "user" -> username,

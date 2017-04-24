@@ -16,9 +16,12 @@
 
 package uk.gov.hmrc.preferencesadminfrontend
 
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{EntityResolverConnector, PreferenceDetails}
@@ -30,16 +33,12 @@ import scala.concurrent.Future
 
 class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
 
+  implicit val hc = HeaderCarrier()
 
   "getPreferences" should {
 
     val validSaUtr = TaxIdentifier("sautr", "123456789")
     val validNino = TaxIdentifier("nino", "SS123456S")
-
-    val entityResolverConnector = mock[EntityResolverConnector]
-    val searchService = new SearchService(entityResolverConnector)
-
-    implicit val hc = HeaderCarrier()
 
     "return preference for nino user when it exists" in new TestCase {
 
@@ -109,12 +108,39 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
 
   }
 
+  "optOut" should {
+
+    "call entity resolver to opt the user out" in new TestCase {
+      when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(true))
+
+      val result = searchService.optOut(validSaUtr).futureValue
+      verify(entityResolverConnector, times(1)).optOut(validSaUtr)
+    }
+
+    "create an audit event when the user is opted out" in new TestCase {
+      when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(true))
+      when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
+
+      val result = searchService.optOut(validSaUtr).futureValue
+      verify(auditConnector, times(1)).sendEvent(any())(any(),any())
+    }
+
+    "create an audit event when the user is not opted out as not found" in new TestCase {
+      when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(false))
+      when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
+
+      val result = searchService.optOut(validSaUtr).futureValue
+      verify(auditConnector, times(1)).sendEvent(any())(any(),any())
+    }
+  }
+
   trait TestCase {
     val validSaUtr = TaxIdentifier("sautr", "123456789")
     val validNino = TaxIdentifier("nino", "CE067583D")
     val invalidNino = TaxIdentifier("nino", "123123456S")
 
+    val auditConnector = mock[AuditConnector]
     val entityResolverConnector = mock[EntityResolverConnector]
-    val searchService = new SearchService(entityResolverConnector)
+    val searchService = new SearchService(entityResolverConnector, auditConnector)
   }
 }

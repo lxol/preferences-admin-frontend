@@ -18,14 +18,18 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.libs.json.Json
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
+import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) {
+class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, auditConnector: AuditConnector) {
 
   def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
     for {
@@ -34,4 +38,12 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector) 
     } yield preferenceDetail.map(details => Preference(details.paperless, details.email, taxIdentifiers))
   }
 
+  def optOut(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext) : Future[Boolean] = {
+    val dataEvent = ExtendedDataEvent("","","", Map.empty, Json.obj(),DateTimeUtils.now)
+    entityResolverConnector.optOut(taxId).map {
+      response =>
+        auditConnector.sendEvent(dataEvent)
+        response
+    }
+  }
 }
