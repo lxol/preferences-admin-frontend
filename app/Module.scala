@@ -29,22 +29,17 @@ class Module extends AbstractModule {
 
   override def configure(): Unit = {
 
-    bind(classOf[FrontendStartup]).asEagerSingleton
-    bind(classOf[AuditConnector]).to(classOf[FrontendAuditConnector])
+    // On startup
+    bind(classOf[FrontendStartup]).asEagerSingleton()
+    bind(classOf[AppConfig]).to(classOf[FrontendAppConfig]).asEagerSingleton()
+    bind(classOf[FrontendFilters]).to(classOf[AdminFrontendGlobal]).asEagerSingleton()
 
-    bind(classOf[AppConfig])
-    .to(classOf[FrontendAppConfig])
-    .asEagerSingleton()
-
-    bind(classOf[LoggerLike]) toInstance Logger
-
-    bindLibraries()
-  }
-
-  private def bindLibraries(): Unit = {
     bind(classOf[RunMode]).to(classOf[DefaultRunMode])
     bind(classOf[ApplicationCrypto]).to(classOf[ApplicationCryptoDI])
-    bind(classOf[FrontendFilters]).to(classOf[AdminFrontendGlobal])
     bind(classOf[FrontendLoggingFilter]).to(classOf[PreferencesFrontendLoggingFilter])
+    bind(classOf[LoggerLike]) toInstance Logger
+
+    bind(classOf[AuditConnector]).to(classOf[FrontendAuditConnector])
   }
+
 }

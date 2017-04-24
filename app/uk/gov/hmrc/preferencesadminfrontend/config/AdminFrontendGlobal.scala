@@ -40,7 +40,8 @@ class AdminFrontendGlobal @Inject()(
      override val csrfFilter: CSRFFilter,
      runMode: RunMode)(implicit val messagesApi: MessagesApi) extends DefaultFrontendGlobal with I18nSupport {
 
-  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html = uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message)
+  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html =
+    throw new RuntimeException("Deprecated - moved to injection of HttpErrorHandler")
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"${runMode.env}.microservice.metrics")
 }

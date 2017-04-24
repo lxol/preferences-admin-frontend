@@ -40,20 +40,12 @@
 
 <link rel="stylesheet" type="text/css" href="@controllers.routes.Assets.at("stylesheets/style.css")" />
 
-@headerNavLinks = {
-  <li>
-    @form(action = CSRF(routes.LoginController.logout)) {
-        <button class="linkButton" type="submit" id="logout">Logout</button>
-    }
-  </li>
-}
-
 @insideHeader = {
     @uiLayouts.header_nav(
       navTitle = Some("Paperless Admin"),
       navTitleLink = None,
       showBetaLink = true,
-      navLinks = Some(headerNavLinks))
+      navLinks = None)
 }
 
 @afterHeader = {}

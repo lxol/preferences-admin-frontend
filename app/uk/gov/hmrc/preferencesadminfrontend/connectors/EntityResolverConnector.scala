@@ -21,7 +21,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.play.config.inject.ServicesConfig
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.hooks.HttpHook
 import uk.gov.hmrc.play.http.ws.WSGet
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
@@ -39,15 +39,21 @@ class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig) ex
 
   def getTaxIdentifiers(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
     val response = GET[Option[Entity]](s"$serviceUrl/entity-resolver/${taxId.regime}/${taxId.value}")
-    response.map(_.fold(Seq.empty[TaxIdentifier])(entity =>
-      Seq(
-        entity.sautr.map(saUtr => TaxIdentifier("sautr", saUtr)),
-        entity.nino.map(nino => TaxIdentifier("nino", nino))
-      ).flatten))
+    response.map(
+      _.fold(Seq.empty[TaxIdentifier])(entity =>
+        Seq(
+          entity.sautr.map(TaxIdentifier("sautr", _)),
+          entity.nino.map(TaxIdentifier("nino", _))
+        ).flatten)
+    ).recover {
+      case ex: BadRequestException => Seq.empty
+    }
   }
 
   def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
-    GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}")
+    GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {
+      case ex: BadRequestException => None
+    }
   }
 }
 
