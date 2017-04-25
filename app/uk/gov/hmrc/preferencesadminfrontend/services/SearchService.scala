@@ -34,14 +34,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
 
   def getPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
     val preferenceOpt = getPreferenceNoAudit(taxId)
-
-    preferenceOpt.map {
-      case Some(preference) =>
-        auditConnector.sendEvent(createSearchEvent(user.username, taxId, Some(preference)))
-      case None =>
-        auditConnector.sendEvent(createSearchEvent(user.username, taxId, None))
-    }
-
+    preferenceOpt.foreach(preference => auditConnector.sendEvent(createSearchEvent(user.username, taxId, preference)))
     preferenceOpt
   }
 

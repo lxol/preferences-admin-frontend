@@ -46,37 +46,30 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(optedInPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validNino)).thenReturn(Future.successful(taxIdentifiers))
 
-      val result = searchService.getPreference(validNino).futureValue
+      searchService.getPreference(validNino).futureValue shouldBe Some(optedInPreference)
 
-      result shouldBe Some(optedInPreference)
-
-      val expectedAuditEvent = searchService.createSearchEvent("user", validNino, Some(optedInPreference))
-      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      val expectedAuditEvent = searchService.createSearchEvent("me", validNino, Some(optedInPreference))
+      verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return preference for utr user when it exists" in new TestCase {
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
-      val result = searchService.getPreference(validSaUtr).futureValue
+      searchService.getPreference(validSaUtr).futureValue shouldBe Some(optedInPreference)
 
-
-      result shouldBe Some(optedInPreference)
-
-      val expectedAuditEvent = searchService.createSearchEvent("user", validSaUtr, Some(optedInPreference))
-      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedInPreference))
+      verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return preference for utr user who has opted out" in new TestCase {
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
-      val result = searchService.getPreference(validSaUtr).futureValue
+      searchService.getPreference(validSaUtr).futureValue shouldBe Some(optedOutPreference)
 
-      result shouldBe Some(optedOutPreference)
-
-      val expectedAuditEvent = searchService.createSearchEvent("user", validSaUtr, Some(optedOutPreference))
-      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedOutPreference))
+      verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return None if the saUtr identifier does not exist" in new TestCase {
@@ -85,12 +78,10 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       override val taxIdentifiers = Seq()
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
-      val result = searchService.getPreference(validSaUtr).futureValue
+      searchService.getPreference(validSaUtr).futureValue shouldBe None
 
-      result shouldBe None
-
-      val expectedAuditEvent = searchService.createSearchEvent("user", validSaUtr, None)
-      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, None)
+      verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
   }
@@ -103,7 +94,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
 
-      val result = searchService.optOut(validSaUtr).futureValue
+      searchService.optOut(validSaUtr).futureValue shouldBe OptedOut
       verify(entityResolverConnector, times(1)).optOut(validSaUtr)
     }
 
@@ -113,11 +104,10 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
       when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
 
-      val result = searchService.optOut(validSaUtr).futureValue
-      verify(auditConnector, times(1)).sendEvent(any())(any(),any())
+      searchService.optOut(validSaUtr).futureValue shouldBe OptedOut
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut)
-      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "create an audit event when the user is not opted out as it is not found" in new TestCase {
@@ -126,11 +116,10 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(PreferenceNotFound))
       when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
 
-      val result = searchService.optOut(validSaUtr).futureValue
-      verify(auditConnector, times(1)).sendEvent(any())(any(),any())
+      searchService.optOut(validSaUtr).futureValue shouldBe PreferenceNotFound
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound)
-      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "create an audit event when the user is already opted out" in new TestCase {
@@ -139,11 +128,10 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(AlreadyOptedOut))
       when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
 
-      val result = searchService.optOut(validSaUtr).futureValue
-      verify(auditConnector, times(1)).sendEvent(any())(any(),any())
+      searchService.optOut(validSaUtr).futureValue shouldBe AlreadyOptedOut
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut)
-      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
   }
 
