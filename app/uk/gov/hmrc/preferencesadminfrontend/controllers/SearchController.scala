@@ -42,17 +42,14 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
 
   def search = AuthorisedAction.async {
     implicit request =>
-      user =>
+      implicit user =>
         Search().bindFromRequest.fold(
           errors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(errors))),
           searchTaxIdentifier => {
-
             searchService.getPreference(searchTaxIdentifier).map {
               case Some(preference) =>
-                auditConnector.sendEvent(createSearchEvent(user.username, searchTaxIdentifier, Some(preference)))
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(searchTaxIdentifier, preference))
               case None =>
-                auditConnector.sendEvent(createSearchEvent(user.username, searchTaxIdentifier, None))
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
             }
           }
@@ -80,18 +77,4 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
     implicit request => user => Future.successful(Ok(failureCode))
   }
 
-  def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, preference: Option[Preference]): ExtendedDataEvent = {
-    val details = Json.obj(
-      "user" -> username,
-      "query" -> Json.toJson(taxIdentifier),
-      "result" -> preference.fold("Not found")(_ => "Found")
-    ) ++ preference.fold(Json.obj())(p => Json.obj("preference" -> Json.toJson(p)))
-
-    ExtendedDataEvent(
-      auditSource = appName,
-      auditType = "TxSucceeded",
-      detail = details,
-      tags = Map("transactionName" -> "Paperless opt out search")
-    )
-  }
 }

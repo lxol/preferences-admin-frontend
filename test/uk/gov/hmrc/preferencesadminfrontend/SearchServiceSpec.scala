@@ -42,42 +42,29 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
   "getPreferences" should {
 
-    val validSaUtr = TaxIdentifier("sautr", "123456789")
-    val validNino = TaxIdentifier("nino", "SS123456S")
-
     "return preference for nino user when it exists" in new TestCase {
-
-      val preferenceDetails = Some(PreferenceDetails(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true))))
-      when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(preferenceDetails))
+      when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(optedInPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validNino)).thenReturn(Future.successful(taxIdentifiers))
 
       val result = searchService.getPreference(validNino).futureValue
 
-      result match {
-        case Some(preference) => {
-          preference.paperless shouldBe true
-          preference.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
-          preference.taxIdentifiers shouldBe taxIdentifiers
-        }
-        case _ => fail()
-      }
+      result shouldBe Some(optedInPreference)
+
+      val expectedAuditEvent = searchService.createSearchEvent("user", validNino, Some(optedInPreference))
+      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return preference for utr user when it exists" in new TestCase {
-      val preferenceDetails = Some(PreferenceDetails(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true))))
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
+      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
       val result = searchService.getPreference(validSaUtr).futureValue
 
-      result match {
-        case Some(preference) => {
-          preference.paperless shouldBe true
-          preference.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
-          preference.taxIdentifiers shouldBe taxIdentifiers
-        }
-        case _ => fail()
-      }
+
+      result shouldBe Some(optedInPreference)
+
+      val expectedAuditEvent = searchService.createSearchEvent("user", validSaUtr, Some(optedInPreference))
+      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return preference for utr user who has opted out" in new TestCase {
@@ -86,14 +73,10 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       val result = searchService.getPreference(validSaUtr).futureValue
 
-      result match {
-        case Some(preference) => {
-          preference.paperless shouldBe false
-          preference.email shouldBe None
-          preference.taxIdentifiers shouldBe taxIdentifiers
-        }
-        case _ => fail()
-      }
+      result shouldBe Some(optedOutPreference)
+
+      val expectedAuditEvent = searchService.createSearchEvent("user", validSaUtr, Some(optedOutPreference))
+      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return None if the saUtr identifier does not exist" in new TestCase {
@@ -105,6 +88,9 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       val result = searchService.getPreference(validSaUtr).futureValue
 
       result shouldBe None
+
+      val expectedAuditEvent = searchService.createSearchEvent("user", validSaUtr, None)
+      Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
   }
@@ -130,7 +116,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       val result = searchService.optOut(validSaUtr).futureValue
       verify(auditConnector, times(1)).sendEvent(any())(any(),any())
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, "preferences-admin-frontend", Some(optedInPreference), Some(optedOutPreference), OptedOut)
+      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut)
       Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
@@ -143,7 +129,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       val result = searchService.optOut(validSaUtr).futureValue
       verify(auditConnector, times(1)).sendEvent(any())(any(),any())
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, "preferences-admin-frontend", None, None, PreferenceNotFound)
+      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound)
       Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
@@ -156,15 +142,50 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       val result = searchService.optOut(validSaUtr).futureValue
       verify(auditConnector, times(1)).sendEvent(any())(any(),any())
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, "preferences-admin-frontend", Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut)
+      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut)
       Mockito.verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+    }
+  }
+
+  "createSearchEvent" should {
+    "generate the correct event when the preference exists" in new TestCase {
+      val preference = Preference(paperless = true, email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
+      val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), Some(preference))
+
+      event.auditSource shouldBe "preferences-admin-frontend"
+      event.auditType shouldBe "TxSucceeded"
+      event.detail shouldBe Json.obj(
+        "user" -> "me",
+        "query" -> Json.obj("name" -> "sautr", "value" -> "123"),
+        "result" -> "Found",
+        "preference" -> Json.obj(
+          "paperless" -> true,
+          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true),
+          "taxIdentifiers" -> Json.arr(Json.obj("name" -> "sautr", "value" -> "123"), Json.obj("name" -> "nino", "value" -> "ABC"))
+        )
+      )
+      event.tags("transactionName") shouldBe "Paperless opt out search"
+    }
+
+    "generate the correct event when the preference does not exist" in new TestCase {
+      val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), None)
+
+      event.auditSource shouldBe "preferences-admin-frontend"
+      event.auditType shouldBe "TxSucceeded"
+      event.detail shouldBe Json.obj(
+        "user" -> "me",
+        "query" -> Json.obj("name" -> "sautr", "value" -> "123"),
+        "result" -> "Not found"
+      )
+      event.tags("transactionName") shouldBe "Paperless opt out search"
+
     }
   }
 
   "createOptoutEvent" should {
 
     "generate the correct event user is opted out" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, "preferences-admin-frontend", Some(optedInPreference), Some(optedOutPreference), OptedOut)
+      val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut)
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
@@ -185,7 +206,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "generate the correct event when the preference already opted out" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, "preferences-admin-frontend", Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut)
+      val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut)
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
@@ -207,7 +228,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "generate the correct event when the preference does not exist" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, "preferences-admin-frontend", None, None, PreferenceNotFound)
+      val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound)
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
@@ -221,7 +242,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "generate the correct event when entity is not found" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, "preferences-admin-frontend", None, None, PreferenceNotFound)
+      val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound)
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"

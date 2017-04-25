@@ -75,22 +75,19 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     "return a preference if tax identifier exists" in new TestCase {
 
       val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
-      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(Some(preference)))
+      when(searchServiceMock.getPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
       bodyOf(result).futureValue should include ("john.doe@digital.hmrc.gov.uk")
-
-      val expectedAuditEvent = searchController.createSearchEvent("user", TaxIdentifier("nino", "CE067583D"), Some(preference))
-      Mockito.verify(auditConnectorMock).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
 
     "include a hidden form to opt the user out" in new TestCase {
 
       val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
-      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(Some(preference)))
+      when(searchServiceMock.getPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
@@ -100,58 +97,18 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       document.body().getElementById("confirm").attr("style") shouldBe "display:none;"
       document.body().getElementById("confirm").getElementsByTag("form").attr("action") shouldBe
         "/paperless/admin/search/opt-out?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
-
     }
 
     "return a not found error message if the preference is not found" in new TestCase {
-      when(searchServiceMock.getPreference(any())(any(), any())).thenReturn(Future.successful(None))
+      when(searchServiceMock.getPreference(any())(any(), any(), any())).thenReturn(Future.successful(None))
       Mockito.reset(auditConnectorMock)
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
       bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
-
-      val expectedAuditEvent = searchController.createSearchEvent("user", TaxIdentifier("nino", "CE067583D"), None)
-      Mockito.verify(auditConnectorMock).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
-
   }
 
-  "createSearchEvent" should {
-    "generate the correct event when the preference exists" in new TestCase {
-      val preference = Preference(paperless = true, email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
-      val event = searchController.createSearchEvent("me", TaxIdentifier("sautr", "123"), Some(preference))
-
-      event.auditSource shouldBe "preferences-admin-frontend"
-      event.auditType shouldBe "TxSucceeded"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> "sautr", "value" -> "123"),
-        "result" -> "Found",
-        "preference" -> Json.obj(
-          "paperless" -> true,
-          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true),
-          "taxIdentifiers" -> Json.arr(Json.obj("name" -> "sautr", "value" -> "123"), Json.obj("name" -> "nino", "value" -> "ABC"))
-        )
-      )
-      event.tags("transactionName") shouldBe "Paperless opt out search"
-    }
-
-    "generate the correct event when the preference does not exist" in new TestCase {
-      val event = searchController.createSearchEvent("me", TaxIdentifier("sautr", "123"), None)
-
-      event.auditSource shouldBe "preferences-admin-frontend"
-      event.auditType shouldBe "TxSucceeded"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> "sautr", "value" -> "123"),
-        "result" -> "Not found"
-      )
-      event.tags("transactionName") shouldBe "Paperless opt out search"
-
-    }
-
-  }
 
   "submit opt out request" should {
     "redirect to the confirm page" in new TestCase with ScalaFutures {
