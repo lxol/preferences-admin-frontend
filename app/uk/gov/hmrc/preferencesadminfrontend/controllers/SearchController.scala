@@ -25,8 +25,10 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
+import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, OptedOut, PreferenceNotFound}
 import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, Search, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.controllers._
 
 import scala.concurrent.Future
 
@@ -60,13 +62,22 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
 
 
   def optOut(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async{
-    implicit request => user =>
-      searchService.optOut(TaxIdentifier(taxIdentifierName,taxIdentifierValue)).map(_ => Redirect(routes.SearchController.confirmed(taxIdentifierName, taxIdentifierValue)))
+    implicit request => implicit user =>
+      searchService.optOut(TaxIdentifier(taxIdentifierName,taxIdentifierValue)).map {
+        case OptedOut => Redirect(routes.SearchController.confirmed(taxIdentifierName, taxIdentifierValue))
+        case AlreadyOptedOut => Redirect(routes.SearchController.failed(taxIdentifierName, taxIdentifierValue, AlreadyOptedOut.errorCode))
+        case PreferenceNotFound => Redirect(routes.SearchController.failed(taxIdentifierName, taxIdentifierValue, PreferenceNotFound.errorCode))
+      }
   }
+
 
 
   def confirmed(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async{
     implicit request => user => Future.successful(Ok("DONE"))
+  }
+
+  def failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String) = AuthorisedAction.async{
+    implicit request => user => Future.successful(Ok(failureCode))
   }
 
   def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, preference: Option[Preference]): ExtendedDataEvent = {

@@ -51,7 +51,8 @@ class ErrorHandler @Inject()(env: Environment,
       uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message, appConfig)
   }
 
-  override def onProdServerError(request: RequestHeader, exception: UsefulException): Future[Result] = impl.onError(request, exception)
+  override def onProdServerError(request: RequestHeader, exception: UsefulException): Future[Result] =
+    impl.onError(request, exception)
 
   override def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] =
     statusCode match {
@@ -60,7 +61,6 @@ class ErrorHandler @Inject()(env: Environment,
       case _ => Future.successful(Results.Status(statusCode)("A client error occurred: " + message))
     }
 
-  override def onServerError(request: RequestHeader, exception: Throwable): Future[Result] = {
+  override def onServerError(request: RequestHeader, exception: Throwable): Future[Result] =
     impl.onError(request, exception)
-  }
 }

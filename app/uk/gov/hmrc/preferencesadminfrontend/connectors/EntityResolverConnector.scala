@@ -58,21 +58,36 @@ class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig) ex
     }
   }
 
-  def optOut(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  def optOut(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[OptOutResult] = {
 
     def warnNotOptedOut(status: Int) = Logger.warn(s"Unable to manually opt-out ${taxId.name} user with id ${taxId.value}. Status: $status")
 
-    POSTEmpty(s"/entity-resolver-admin/manual-opt-out/${taxId.regime}/${taxId.value}")
-      .map(_ => true)
+    POSTEmpty(s"$serviceUrl/entity-resolver-admin/manual-opt-out/${taxId.regime}/${taxId.value}")
+      .map(_ => OptedOut)
       .recover {
         case ex: NotFoundException =>
           warnNotOptedOut(404)
-          false
-        case ex@Upstream4xxResponse(_, Status.CONFLICT | Status.PRECONDITION_FAILED, _, _) =>
+          PreferenceNotFound
+        case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) =>
           warnNotOptedOut(ex.upstreamResponseCode)
-          false
+          AlreadyOptedOut
+        case ex@Upstream4xxResponse(_, Status.PRECONDITION_FAILED, _, _) =>
+          warnNotOptedOut(ex.upstreamResponseCode)
+          PreferenceNotFound
       }
   }
+}
+
+trait OptOutResult
+
+case object OptedOut extends OptOutResult
+
+case object AlreadyOptedOut extends OptOutResult {
+  val errorCode: String = "AlreadyOptedOut"
+}
+
+case object PreferenceNotFound extends OptOutResult {
+  val errorCode: String = "NotFound"
 }
 
 

@@ -25,7 +25,7 @@ import play.api.libs.json._
 import uk.gov.hmrc.play.config.inject.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
+import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, EntityResolverConnector, OptedOut, PreferenceNotFound}
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -155,7 +155,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
       val result = entityConnectorPostMock(expectedPath, emptyJson, Status.OK).optOut(sautr).futureValue
 
-      result shouldBe true
+      result shouldBe OptedOut
     }
 
     "return false if CONFLICT" in new TestCase {
@@ -163,7 +163,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
       val result = entityConnectorPostMock(expectedPath, emptyJson, Status.CONFLICT).optOut(sautr).futureValue
 
-      result shouldBe false
+      result shouldBe AlreadyOptedOut
     }
 
     "return false if NOT_FOUND" in new TestCase {
@@ -171,7 +171,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
       val result = entityConnectorPostMock(expectedPath, emptyJson, Status.NOT_FOUND).optOut(sautr).futureValue
 
-      result shouldBe false
+      result shouldBe PreferenceNotFound
     }
 
     "return false if PRECONDITION_FAILED" in new TestCase {
@@ -179,7 +179,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
       val result = entityConnectorPostMock(expectedPath, emptyJson, Status.PRECONDITION_FAILED).optOut(sautr).futureValue
 
-      result shouldBe false
+      result shouldBe PreferenceNotFound
     }
 
   }

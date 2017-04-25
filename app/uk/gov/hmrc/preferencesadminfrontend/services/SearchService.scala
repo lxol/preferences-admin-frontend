@@ -21,15 +21,16 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
+import uk.gov.hmrc.play.config.inject.AppName
 import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.preferencesadminfrontend.connectors.EntityResolverConnector
+import uk.gov.hmrc.preferencesadminfrontend.connectors._
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
-import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, auditConnector: AuditConnector) {
+class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, auditConnector: AuditConnector, appName: AppName) {
 
   def getPreference(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
     for {
@@ -38,12 +39,41 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
     } yield preferenceDetail.map(details => Preference(details.paperless, details.email, taxIdentifiers))
   }
 
-  def optOut(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext) : Future[Boolean] = {
-    val dataEvent = ExtendedDataEvent("","","", Map.empty, Json.obj(),DateTimeUtils.now)
-    entityResolverConnector.optOut(taxId).map {
-      response =>
-        auditConnector.sendEvent(dataEvent)
-        response
+  def optOut(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext) : Future[OptOutResult] = {
+
+    for {
+      originalPreference <- getPreference(taxId)
+      optoutResult <- entityResolverConnector.optOut(taxId)
+      newPreference <- getPreference(taxId)
+    } yield {
+      auditConnector.sendEvent(createOptOutEvent(user.username, taxId, appName.appName, originalPreference, newPreference, optoutResult))
+      optoutResult
     }
+
+  }
+
+  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, appName: String, originalPreference: Option[Preference], newPreference: Option[Preference],optOutResult: OptOutResult) : ExtendedDataEvent = {
+    val reasonOfFailureJson = optOutResult match {
+      case OptedOut => Json.obj()
+      case AlreadyOptedOut => Json.obj("reasonOfFailure" -> "Preference already opted out")
+      case PreferenceNotFound => Json.obj("reasonOfFailure" -> "Preference not found")
+    }
+
+    val details = Json.obj(
+      "user" -> username,
+      "query" -> Json.toJson(taxIdentifier)) ++
+      originalPreference.fold(Json.obj())(p => Json.obj("originalPreference" -> Json.toJson(p))) ++
+      newPreference.fold(Json.obj())(p => Json.obj("newPreference" -> Json.toJson(p))) ++
+      reasonOfFailureJson
+
+
+
+
+    ExtendedDataEvent(
+      auditSource = appName,
+      auditType = if (optOutResult == OptedOut) "TxSucceeded" else "TxFailed",
+      detail = details,
+      tags = Map("transactionName" -> "Manual opt out from paperless")
+    )
   }
 }

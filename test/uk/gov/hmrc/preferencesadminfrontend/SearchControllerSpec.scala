@@ -35,6 +35,7 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
+import uk.gov.hmrc.preferencesadminfrontend.connectors.OptedOut
 import uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services._
@@ -155,7 +156,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
   "submit opt out request" should {
     "redirect to the confirm page" in new TestCase with ScalaFutures {
       val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
-      when(searchServiceMock.optOut(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")))(any(), any())).thenReturn(Future.successful(true))
+      when(searchServiceMock.optOut(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")))(any(), any(), any())).thenReturn(Future.successful(OptedOut))
 
       val result = searchController.optOut("nino", "CE067583D")(addToken(
         FakeRequest(Helpers.POST, controllers.routes.SearchController.optOut("nino", "CE067583D").url).withSession(User.sessionKey -> "user")))

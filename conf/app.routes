@@ -7,3 +7,4 @@ GET         /search                                  uk.gov.hmrc.preferencesadmi
 GET         /search/q                                uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.search
 POST        /search/opt-out                          uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.optOut(taxIdentifierName: String, taxIdentifierValue: String)
 GET         /search/confirmed                        uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.confirmed(taxIdentifierName: String, taxIdentifierValue: String)
+GET         /search/failed                           uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String)
