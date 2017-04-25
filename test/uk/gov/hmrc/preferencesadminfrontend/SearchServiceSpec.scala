@@ -94,7 +94,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
 
-      searchService.optOut(validSaUtr).futureValue shouldBe OptedOut
+      searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe OptedOut
       verify(entityResolverConnector, times(1)).optOut(validSaUtr)
     }
 
@@ -104,9 +104,9 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
       when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
 
-      searchService.optOut(validSaUtr).futureValue shouldBe OptedOut
+      searchService.optOut(validSaUtr,"my optOut reason").futureValue shouldBe OptedOut
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut)
+      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut, "my optOut reason")
       verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
@@ -116,9 +116,9 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(PreferenceNotFound))
       when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
 
-      searchService.optOut(validSaUtr).futureValue shouldBe PreferenceNotFound
+      searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe PreferenceNotFound
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound)
+      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound, "my optOut reason")
       verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
@@ -128,9 +128,9 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(AlreadyOptedOut))
       when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
 
-      searchService.optOut(validSaUtr).futureValue shouldBe AlreadyOptedOut
+      searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe AlreadyOptedOut
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut)
+      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut, "my optOut reason")
       verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
   }
@@ -173,13 +173,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
   "createOptoutEvent" should {
 
     "generate the correct event user is opted out" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut)
+      val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
       event.detail shouldBe Json.obj(
         "user" -> "me",
         "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
+        "optOutReason" -> "my optOut reason",
         "originalPreference" -> Json.obj(
           "paperless" -> true,
           "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true),
@@ -194,13 +195,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "generate the correct event when the preference already opted out" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut)
+      val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
       event.detail shouldBe Json.obj(
         "user" -> "me",
         "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
+        "optOutReason" -> "my optOut reason",
         "originalPreference" -> Json.obj(
           "paperless" -> false,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
@@ -216,13 +218,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "generate the correct event when the preference does not exist" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound)
+      val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
       event.detail shouldBe Json.obj(
         "user" -> "me",
         "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
+        "optOutReason" -> "my optOut reason",
         "reasonOfFailure" -> "Preference not found"
       )
       event.tags("transactionName") shouldBe "Manual opt out from paperless"
@@ -230,13 +233,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "generate the correct event when entity is not found" in new TestCase {
-      val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound)
+      val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
       event.detail shouldBe Json.obj(
         "user" -> "me",
         "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
+        "optOutReason" -> "my optOut reason",
         "reasonOfFailure" -> "Preference not found"
       )
       event.tags("transactionName") shouldBe "Manual opt out from paperless"

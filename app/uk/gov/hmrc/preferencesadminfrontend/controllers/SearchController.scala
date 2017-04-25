@@ -18,14 +18,17 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.data.Form
+import play.api.data.Forms.{mapping, text}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, OptedOut, PreferenceNotFound}
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.{OptOutReason, Search}
 import uk.gov.hmrc.preferencesadminfrontend.services._
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Search, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
 
 import scala.concurrent.Future
 
@@ -45,7 +48,7 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
           searchTaxIdentifier => {
             searchService.searchPreference(searchTaxIdentifier).map {
               case Some(preference) =>
-                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(searchTaxIdentifier, preference))
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(OptOutReason(), searchTaxIdentifier, preference))
               case None =>
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
             }
@@ -55,32 +58,51 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
   }
 
 
-  def optOut(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async{
-    implicit request => implicit user =>
-      searchService.optOut(TaxIdentifier(taxIdentifierName,taxIdentifierValue)).map {
-        case OptedOut => Redirect(routes.SearchController.confirmed(taxIdentifierName, taxIdentifierValue))
-        case AlreadyOptedOut => Redirect(routes.SearchController.failed(taxIdentifierName, taxIdentifierValue, AlreadyOptedOut.errorCode))
-        case PreferenceNotFound => Redirect(routes.SearchController.failed(taxIdentifierName, taxIdentifierValue, PreferenceNotFound.errorCode))
-      }
+  def optOut(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
+    implicit request =>
+      implicit user =>
+        val identifier = TaxIdentifier(taxIdentifierName, taxIdentifierValue)
+        OptOutReason().bindFromRequest.fold(
+          errors => {
+            searchService.getPreference(identifier).map {
+              case Some(preference) =>
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(errors, identifier, preference))
+              case None =>
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
+            }
+
+          },
+          optOutReason => {
+            searchService.optOut(identifier, optOutReason.reason).map {
+              case OptedOut => Redirect(routes.SearchController.confirmed(taxIdentifierName, taxIdentifierValue))
+              case AlreadyOptedOut => Redirect(routes.SearchController.failed(taxIdentifierName, taxIdentifierValue, AlreadyOptedOut.errorCode))
+              case PreferenceNotFound => Redirect(routes.SearchController.failed(taxIdentifierName, taxIdentifierValue, PreferenceNotFound.errorCode))
+            }
+          }
+        )
   }
 
 
-
-  def confirmed(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async{
-    implicit request => implicit user =>
-      searchService.getPreference(TaxIdentifier(taxIdentifierName, taxIdentifierValue)).map {
-        case Some(preference) =>
-          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.confirmed(preference))
-        case None =>
-          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.failed(TaxIdentifier(taxIdentifierName, taxIdentifierValue), None, PreferenceNotFound.errorCode))
-      }
+  def confirmed(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
+    implicit request =>
+      implicit user =>
+        searchService.getPreference(TaxIdentifier(taxIdentifierName, taxIdentifierValue)).map {
+          case Some(preference) =>
+            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.confirmed(preference))
+          case None =>
+            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.failed(TaxIdentifier(taxIdentifierName, taxIdentifierValue), None, PreferenceNotFound.errorCode))
+        }
   }
 
-  def failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String) = AuthorisedAction.async{
-    implicit request => implicit user =>
-      searchService.getPreference(TaxIdentifier(taxIdentifierName, taxIdentifierValue)).map { preference =>
-        Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.failed(TaxIdentifier(taxIdentifierName, taxIdentifierValue), preference, failureCode))
-      }
+  def failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String) = AuthorisedAction.async {
+    implicit request =>
+      implicit user =>
+        searchService.getPreference(TaxIdentifier(taxIdentifierName, taxIdentifierValue)).map { preference =>
+          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.failed(TaxIdentifier(taxIdentifierName, taxIdentifierValue), preference, failureCode))
+        }
   }
-
 }
+
+
+
+

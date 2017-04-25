@@ -16,9 +16,19 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
-case class User(username: String, password: String)
+import play.api.data.Form
+import play.api.data.Forms.{mapping, nonEmptyText, text}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
 
-object User {
-  val sessionKey = "user"
+
+object Search {
+
+  def apply() = Form[TaxIdentifier](
+    mapping(
+      "name" -> text
+        .verifying("error.name_invalid", name => name == "sautr" || name == "nino"),
+      "value" -> nonEmptyText
+    )(TaxIdentifier.apply)(TaxIdentifier.unapply))
+
+
 }
-

@@ -14,8 +14,10 @@
  * limitations under the License.
  *@
 
-@(searchTaxIdentifier: uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier,
-        preference: uk.gov.hmrc.preferencesadminfrontend.services.model.Preference)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.model.OptOutReason
+@(reason: Form[OptOutReason],
+  searchTaxIdentifier: uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier,
+  preference: uk.gov.hmrc.preferencesadminfrontend.services.model.Preference)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
 
 @import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 @import uk.gov.hmrc.play.views.html.helpers._
@@ -47,11 +49,17 @@
             </div>
         </div>
         @if(preference.paperless) {
-            <div id="confirm" class="accordion__body hidden" data-accordion-body aria-hidden="true">
+            <div id="confirm" class="accordion__body @if(!reason.hasErrors){hidden}" data-accordion-body aria-hidden="true">
 
                 <p class="font-xsmall">Are you sure you wish to opt this user out?</p>
 
                 @form(action = routes.SearchController.optOut(searchTaxIdentifier.name, searchTaxIdentifier.value)) {
+                    @textArea(reason("reason"),
+                        '_label -> "Please provide reason",
+                        '_divClass -> "form-field font-xsmall",
+                        '_type -> "text",
+                        '_inputClass -> "input--fullwidth input--cleared font-xsmall"
+                    )
                     <div class="form-field">
                         <button class="button" type="submit">Yes</button>
                     </div>

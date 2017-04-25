@@ -112,10 +112,13 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
   "submit opt out request" should {
     "redirect to the confirm page" in new TestCase with ScalaFutures {
       val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
-      when(searchServiceMock.optOut(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")))(any(), any(), any())).thenReturn(Future.successful(OptedOut))
+      when(searchServiceMock.optOut(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")),any())(any(), any(), any())).thenReturn(Future.successful(OptedOut))
 
-      val result = searchController.optOut("nino", "CE067583D")(addToken(
-        FakeRequest(Helpers.POST, controllers.routes.SearchController.optOut("nino", "CE067583D").url).withSession(User.sessionKey -> "user")))
+      private val request = FakeRequest(Helpers.POST, controllers.routes.SearchController.optOut("nino", "CE067583D").url)
+        .withFormUrlEncodedBody("reason" -> "my optOut reason")
+        .withSession(User.sessionKey -> "user")
+
+      val result = searchController.optOut("nino", "CE067583D")(addToken(request))
 
       status(result) shouldBe SEE_OTHER
       header("Location", result) shouldBe Some(controllers.routes.SearchController.confirmed("nino", "CE067583D").url)

@@ -18,6 +18,7 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
 
+import akka.actor.FSM.Reason
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -46,20 +47,20 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
     } yield preferenceDetail.map(details => Preference(details.paperless, details.email, taxIdentifiers))
   }
 
-  def optOut(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext) : Future[OptOutResult] = {
+  def optOut(taxId: TaxIdentifier, reason: String)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext) : Future[OptOutResult] = {
 
     for {
       originalPreference <- getPreference(taxId)
       optoutResult <- entityResolverConnector.optOut(taxId)
       newPreference <- getPreference(taxId)
     } yield {
-      auditConnector.sendEvent(createOptOutEvent(user.username, taxId, originalPreference, newPreference, optoutResult))
+      auditConnector.sendEvent(createOptOutEvent(user.username, taxId, originalPreference, newPreference, optoutResult, reason))
       optoutResult
     }
 
   }
 
-  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, originalPreference: Option[Preference], newPreference: Option[Preference],optOutResult: OptOutResult) : ExtendedDataEvent = {
+  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, originalPreference: Option[Preference], newPreference: Option[Preference],optOutResult: OptOutResult, reason: String) : ExtendedDataEvent = {
     val reasonOfFailureJson = optOutResult match {
       case OptedOut => Json.obj()
       case AlreadyOptedOut => Json.obj("reasonOfFailure" -> "Preference already opted out")
@@ -68,7 +69,9 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
 
     val details = Json.obj(
       "user" -> username,
-      "query" -> Json.toJson(taxIdentifier)) ++
+      "query" -> Json.toJson(taxIdentifier),
+      "optOutReason" -> reason
+    ) ++
       originalPreference.fold(Json.obj())(p => Json.obj("originalPreference" -> Json.toJson(p))) ++
       newPreference.fold(Json.obj())(p => Json.obj("newPreference" -> Json.toJson(p))) ++
       reasonOfFailureJson

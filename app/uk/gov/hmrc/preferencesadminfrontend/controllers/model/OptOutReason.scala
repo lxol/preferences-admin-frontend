@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend.services.model
+package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
 import play.api.data.Form
-import play.api.data.Forms.{mapping, text, nonEmptyText}
+import play.api.data.Forms.{mapping, nonEmptyText}
 
 
-object Search {
+case class OptOutReason(reason : String)
 
-  def apply() = Form[TaxIdentifier](
+object OptOutReason {
+  def apply() : Form[OptOutReason] = Form[OptOutReason](
     mapping(
-      "name" -> text
-        .verifying("error.name_invalid", name => name == "sautr" || name == "nino"),
-      "value" -> nonEmptyText
-    )(TaxIdentifier.apply)(TaxIdentifier.unapply))
-
+      "reason" -> nonEmptyText
+    )(OptOutReason.apply)(OptOutReason.unapply))
 
 }
