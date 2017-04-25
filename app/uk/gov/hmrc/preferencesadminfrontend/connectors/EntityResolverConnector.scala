@@ -87,7 +87,7 @@ case object AlreadyOptedOut extends OptOutResult {
 }
 
 case object PreferenceNotFound extends OptOutResult {
-  val errorCode: String = "NotFound"
+  val errorCode: String = "PreferenceNotFound"
 }
 
 

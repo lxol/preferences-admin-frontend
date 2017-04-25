@@ -1,0 +1,42 @@
+@*
+ * Copyright 2017 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@(taxId: uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier,
+        preference: Option[uk.gov.hmrc.preferencesadminfrontend.services.model.Preference],
+        failureCode: String)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
+
+@uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
+
+    <div class="transaction-banner--complete">
+        <h1 class="transaction-banner__heading">Failed to manually opt user out</h1>
+        @{failureCode match {
+            case "PreferenceNotFound" => <p>No preference found for user with {taxId.name} {taxId.value}</p>
+            case "AlreadyOptedOut" => <p>The user with {taxId.name} {taxId.value} was already opted out</p>
+            case _ => <p></p>
+        }}
+
+    </div>
+
+    @preference.map { p =>
+        <h2>User Summary</h2>
+
+        @uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(p)
+
+    }
+    <div style="margin-top: 100px;">
+        <a class="back-link" href="/paperless/admin/search">Opt out another user</a>
+    </div>
+}

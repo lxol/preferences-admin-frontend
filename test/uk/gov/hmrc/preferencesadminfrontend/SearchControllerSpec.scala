@@ -75,7 +75,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     "return a preference if tax identifier exists" in new TestCase {
 
       val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
-      when(searchServiceMock.getPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
@@ -87,20 +87,19 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     "include a hidden form to opt the user out" in new TestCase {
 
       val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
-      when(searchServiceMock.getPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
       private val document = Jsoup.parse(bodyOf(result).futureValue)
 
-      document.body().getElementById("confirm").attr("style") shouldBe "display:none;"
       document.body().getElementById("confirm").getElementsByTag("form").attr("action") shouldBe
         "/paperless/admin/search/opt-out?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
     }
 
     "return a not found error message if the preference is not found" in new TestCase {
-      when(searchServiceMock.getPreference(any())(any(), any(), any())).thenReturn(Future.successful(None))
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(None))
       Mockito.reset(auditConnectorMock)
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 

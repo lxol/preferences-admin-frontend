@@ -46,7 +46,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(optedInPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validNino)).thenReturn(Future.successful(taxIdentifiers))
 
-      searchService.getPreference(validNino).futureValue shouldBe Some(optedInPreference)
+      searchService.searchPreference(validNino).futureValue shouldBe Some(optedInPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validNino, Some(optedInPreference))
       verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
@@ -56,7 +56,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
-      searchService.getPreference(validSaUtr).futureValue shouldBe Some(optedInPreference)
+      searchService.searchPreference(validSaUtr).futureValue shouldBe Some(optedInPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedInPreference))
       verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
@@ -66,7 +66,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails))
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
-      searchService.getPreference(validSaUtr).futureValue shouldBe Some(optedOutPreference)
+      searchService.searchPreference(validSaUtr).futureValue shouldBe Some(optedOutPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedOutPreference))
       verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
@@ -78,7 +78,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       override val taxIdentifiers = Seq()
       when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
-      searchService.getPreference(validSaUtr).futureValue shouldBe None
+      searchService.searchPreference(validSaUtr).futureValue shouldBe None
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, None)
       verify(auditConnector).sendEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())

@@ -32,14 +32,14 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, auditConnector: AuditConnector, appName: AppName) {
 
-  def getPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
-    val preferenceOpt = getPreferenceNoAudit(taxId)
+  def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
+    val preferenceOpt = getPreference(taxId)
     preferenceOpt.foreach(preference => auditConnector.sendEvent(createSearchEvent(user.username, taxId, preference)))
     preferenceOpt
   }
 
 
-  private def getPreferenceNoAudit(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
+  def getPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
     for {
       preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
       taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
@@ -49,9 +49,9 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
   def optOut(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext) : Future[OptOutResult] = {
 
     for {
-      originalPreference <- getPreferenceNoAudit(taxId)
+      originalPreference <- getPreference(taxId)
       optoutResult <- entityResolverConnector.optOut(taxId)
-      newPreference <- getPreferenceNoAudit(taxId)
+      newPreference <- getPreference(taxId)
     } yield {
       auditConnector.sendEvent(createOptOutEvent(user.username, taxId, originalPreference, newPreference, optoutResult))
       optoutResult

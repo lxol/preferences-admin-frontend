@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package uk.gov.hmrc.preferencesadminfrontend.services.model
-
-import play.api.libs.json.Json
-
-case class TaxIdentifier(name: String, value: String) {
-  val regime = name match {
-    case "sautr" => "sa"
-    case "nino" => "paye"
-    case _ => throw new RuntimeException("Invalid tax id name")
-  }
-}
-
-object TaxIdentifier {
-  implicit val format = Json.format[TaxIdentifier]
-}
-
+@()(implicit request: Request[_], messages: Messages)
+@import helper._
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
+<li>
+    @form(action = CSRF(routes.LoginController.logout)) {
+        <button class="linkButton" type="submit" id="logout">Logout</button>
+    }
+</li>

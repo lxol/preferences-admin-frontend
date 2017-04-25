@@ -1,0 +1,66 @@
+@*
+ * Copyright 2017 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@(searchTaxIdentifier: uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier,
+        preference: uk.gov.hmrc.preferencesadminfrontend.services.model.Preference)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
+
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
+@import uk.gov.hmrc.play.views.html.helpers._
+
+@uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
+
+    <h2>User Summary</h2>
+
+    @uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(preference)
+
+
+    <h2>Actions</h2>
+
+
+    <div id="accordionId" data-accordion data-accordion-animate data-accordion-set-hash aria-expanded="false" class="accordion">
+        <div class="accordion__row">
+            <div class="accordion__row__left">
+                <i class="accordion__indicator arrow arrow--right font-small" data-accordion-arrow></i>
+                <a class="accordion__button link--no-underline bold-small" href="" data-accordion-button role="button">
+                    Opt user out of paperless
+                </a>
+            </div>
+            <div class="accordion__row__right align--top">
+            @if(preference.paperless) {
+                <p class="font-xsmall flush">This option allows you to opt out this user from paperless</p>
+            } else {
+                <p class="font-xsmall flush">This user already opted out from paperless</p>
+            }
+            </div>
+        </div>
+        @if(preference.paperless) {
+            <div id="confirm" class="accordion__body hidden" data-accordion-body aria-hidden="true">
+
+                <p class="font-xsmall">Are you sure you wish to opt this user out?</p>
+
+                @form(action = routes.SearchController.optOut(searchTaxIdentifier.name, searchTaxIdentifier.value)) {
+                    <div class="form-field">
+                        <button class="button" type="submit">Yes</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div style="margin-top: 200px;">
+        <a class="back-link" href="/paperless/admin/search?taxIdentifierName=@{searchTaxIdentifier.name}&taxIdentifierValue=@{searchTaxIdentifier.value}">Back to search</a>
+    </div>
+}
