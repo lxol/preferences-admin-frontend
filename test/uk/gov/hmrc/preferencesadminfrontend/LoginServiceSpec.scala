@@ -32,6 +32,20 @@ class LoginServiceSpec extends UnitSpec with MockitoSugar {
 
       loginService.isAuthorised(user) shouldBe true
     }
+
+    "not allow an user which is not included" in new TestCase {
+      lazy val loginService = new LoginService(loginServiceConfiguration)
+      val user = new User("anotherUser", "password")
+
+      loginService.isAuthorised(user) shouldBe false
+    }
+
+    "not allow if the password is wrong" in new TestCase {
+      lazy val loginService = new LoginService(loginServiceConfiguration)
+      val user = new User("username", "wrongPassword")
+
+      loginService.isAuthorised(user) shouldBe false
+    }
   }
 
   trait TestCase {
