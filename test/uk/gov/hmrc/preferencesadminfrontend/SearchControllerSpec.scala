@@ -18,8 +18,8 @@ package uk.gov.hmrc.preferencesadminfrontend
 
 import akka.stream.Materializer
 import org.jsoup.Jsoup
-import org.mockito.ArgumentMatchers.{any, argThat}
-import org.mockito.Mockito.when
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito._
 import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -27,9 +27,8 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{headers, _}
+import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -70,6 +69,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
   "search(taxIdentifier)" should {
 
     val queryParamsForValidNino = "?name=nino&value=CE067583D"
+    val queryParamsForValidLowercaseNino = "?name=nino&value=ce067583d"
     val queryParamsForInvalidNino = "?name=nino&value=1234567"
 
     "return a preference if tax identifier exists" in new TestCase {
@@ -105,6 +105,21 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
 
       status(result) shouldBe Status.OK
       bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
+    }
+
+    "call the search service with an uppercase taxIdentifier if a lowercase taxIdentifier is provided through the Form" in new TestCase {
+      val preference = Preference(paperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
+
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidLowercaseNino).withSession(User.sessionKey -> "user")))
+
+      verify(searchServiceMock, times(1)).searchPreference(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")))(any(), any(), any())
+      verify(searchServiceMock, times(0)).searchPreference(ArgumentMatchers.eq(TaxIdentifier("nino", "ce067583d")))(any(), any(), any())
+      status(result) shouldBe Status.OK
+      private val document = Jsoup.parse(bodyOf(result).futureValue)
+
+      document.body().getElementById("confirm").getElementsByTag("form").attr("action") shouldBe
+        "/paperless/admin/search/opt-out?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
     }
   }
 
