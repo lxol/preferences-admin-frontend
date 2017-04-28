@@ -28,7 +28,5 @@ object Search {
       "name" -> text
         .verifying("error.name_invalid", name => name == "sautr" || name == "nino"),
       "value" -> nonEmptyText
-    )(TaxIdentifier.apply)(TaxIdentifier.unapply))
-
-
+    )((name, value) => TaxIdentifier.apply(name, value.toUpperCase))(TaxIdentifier.unapply))
 }
