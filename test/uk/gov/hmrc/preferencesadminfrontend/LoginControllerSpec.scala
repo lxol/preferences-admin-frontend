@@ -29,7 +29,7 @@ import play.api.i18n.MessagesApi
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.config.inject.RunMode
+import uk.gov.hmrc.play.config.inject.{AppName, RunMode}
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
@@ -63,7 +63,7 @@ class LoginControllerSpec
         )
       )
 
-      session(result).data should contain ("user" -> "user")
+      session(result).data should contain ("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain ("Location" -> "/paperless/admin/search")
     }
@@ -90,9 +90,9 @@ class LoginControllerSpec
 
   "POST to logout" should {
     "Destroy existing session and redirect to login page" in {
-      val result = loginController.logout(addToken(FakeRequest().withSession("user" -> "user")))
+      val result = loginController.logout(addToken(FakeRequest().withSession("userId" -> "user")))
 
-      session(result).data should not contain ("user" -> "user")
+      session(result).data should not contain ("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain ("Location" -> "/paperless/admin")
     }
@@ -112,7 +112,8 @@ trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAp
 
   val playConfiguration = app.injector.instanceOf[Configuration]
   val runMode = app.injector.instanceOf[RunMode]
+  val appName = app.injector.instanceOf[AppName]
 
   val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration, runMode)
-  val loginController = new LoginController(new LoginService(loginServiceConfiguration), auditConnectorMock)
+  val loginController = new LoginController(new LoginService(loginServiceConfiguration), auditConnectorMock, appName)
 }

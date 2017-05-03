@@ -19,6 +19,7 @@ package uk.gov.hmrc.preferencesadminfrontend.config
 import javax.inject.{Inject, Singleton}
 
 import com.kenshoo.play.metrics.MetricsFilter
+import org.joda.time.Duration
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.Request
 import play.api.{Application, Configuration}
@@ -26,9 +27,10 @@ import play.filters.csrf.CSRFFilter
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.inject.RunMode
+import uk.gov.hmrc.play.filters.frontend.SessionTimeoutFilter
 import uk.gov.hmrc.play.frontend.bootstrap.DefaultFrontendGlobal
 import uk.gov.hmrc.play.http.logging.filters.FrontendLoggingFilter
-import uk.gov.hmrc.preferencesadminfrontend.config.filters.PreferencesFrontendAuditFilter
+import uk.gov.hmrc.preferencesadminfrontend.config.filters.{PreferencesFrontendAuditFilter, SessionTimeoutFilterWithEntryPoint}
 
 @Singleton
 class AdminFrontendGlobal @Inject()(
@@ -44,4 +46,23 @@ class AdminFrontendGlobal @Inject()(
     throw new RuntimeException("Deprecated - moved to injection of HttpErrorHandler")
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"${runMode.env}.microservice.metrics")
+
+  override lazy val sessionTimeoutFilter: SessionTimeoutFilter = {
+
+    val defaultTimeout = Duration.standardMinutes(15)
+    val timeoutDuration = configuration
+      .getLong("session.timeoutSeconds")
+      .map(Duration.standardSeconds)
+      .getOrElse(defaultTimeout)
+
+    val wipeIdleSession = configuration
+      .getBoolean("session.wipeIdleSession")
+      .getOrElse(true)
+
+    val additionalSessionKeysToKeep = configuration
+      .getStringSeq("session.additionalSessionKeysToKeep")
+      .getOrElse(Seq.empty).toSet
+
+    new SessionTimeoutFilterWithEntryPoint(timeoutDuration = timeoutDuration)
+  }
 }

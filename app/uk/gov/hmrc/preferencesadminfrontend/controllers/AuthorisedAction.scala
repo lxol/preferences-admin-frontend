@@ -30,7 +30,7 @@ object AuthorisedAction {
 
         user match {
           case Some(user) => block(request)(user)
-          case _ => Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage().url))
+          case _ => Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage()))
         }
       }
 

@@ -16,9 +16,11 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
+import uk.gov.hmrc.play.http.SessionKeys
+
 case class User(username: String, password: String)
 
 object User {
-  val sessionKey = "user"
+  val sessionKey = SessionKeys.userId
 }
 

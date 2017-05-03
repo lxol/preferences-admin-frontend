@@ -24,7 +24,7 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.play.config.AppName
+import uk.gov.hmrc.play.config.inject.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
 import uk.gov.hmrc.play.http.SessionKeys
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
@@ -35,7 +35,7 @@ import uk.gov.hmrc.time.DateTimeUtils
 import scala.concurrent.Future
 
 @Singleton
-class LoginController @Inject()(loginService: LoginService, auditConnector: AuditConnector)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
+class LoginController @Inject()(loginService: LoginService, auditConnector: AuditConnector, appName: AppName)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {
 
   val showLoginPage = Action.async {
     implicit request =>
@@ -50,7 +50,7 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
         if (loginService.isAuthorised(userData)) {
           auditConnector.sendEvent(createLoginEvent(userData.username, true))
           val sessionUpdated = request.session + (User.sessionKey -> userData.username) + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
-          Future.successful(Redirect(routes.SearchController.showSearchPage().url).withSession(sessionUpdated))
+          Future.successful(Redirect(routes.SearchController.showSearchPage()).withSession(sessionUpdated))
         }
         else {
           auditConnector.sendEvent(createLoginEvent(userData.username, false))
@@ -63,18 +63,18 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
 
   val logout = AuthorisedAction.async { implicit request => user =>
     auditConnector.sendEvent(createLogoutEvent(user.username))
-    Future.successful(Redirect(routes.LoginController.showLoginPage().url).withSession(Session()))
+    Future.successful(Redirect(routes.LoginController.showLoginPage()).withSession(Session()))
   }
 
   def createLoginEvent(username: String, successful: Boolean) = DataEvent(
-    auditSource = appName,
+    auditSource = appName.appName,
     auditType = if (successful) "TxSucceeded" else "TxFailed",
     detail = Map("user" -> username),
     tags = Map("transactionName" -> "Login")
   )
 
   def createLogoutEvent(username: String) = DataEvent(
-    auditSource = appName,
+    auditSource = appName.appName,
     auditType = "TxSucceeded",
     detail = Map("user" -> username),
     tags = Map("transactionName" -> "Logout")
