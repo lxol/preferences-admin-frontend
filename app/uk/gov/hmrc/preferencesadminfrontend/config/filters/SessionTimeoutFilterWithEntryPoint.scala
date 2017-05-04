@@ -29,7 +29,7 @@ class SessionTimeoutFilterWithEntryPoint(clock: () => DateTime = () => DateTime.
                                          onlyWipeAuthToken: Boolean = false)
   extends SessionTimeoutFilter(clock, timeoutDuration, additionalSessionKeysToKeep, onlyWipeAuthToken) with Filter with MicroserviceFilterSupport {
 
-  val entryPoint: String = uk.gov.hmrc.preferencesadminfrontend.controllers.routes.LoginController.showLoginPage().path
+  lazy val entryPoint: String = uk.gov.hmrc.preferencesadminfrontend.controllers.routes.LoginController.showLoginPage().path
 
   override def apply(f: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
     if (rh.path == entryPoint) f(rh)

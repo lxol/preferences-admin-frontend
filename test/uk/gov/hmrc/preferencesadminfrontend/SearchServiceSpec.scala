@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend
 
-import org.mockito.{ArgumentMatcher, Mockito}
+import org.mockito.ArgumentMatcher
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
