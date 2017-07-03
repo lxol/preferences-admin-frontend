@@ -19,8 +19,8 @@
   searchTaxIdentifier: uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier,
   preference: uk.gov.hmrc.preferencesadminfrontend.services.model.Preference)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
 
-@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 @import uk.gov.hmrc.play.views.html.helpers._
+@import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
 
@@ -41,14 +41,14 @@
                 </a>
             </div>
             <div class="accordion__row__right align--top">
-            @if(preference.genericPaperless) {
+            @if(preference.genericPaperless || preference.taxCreditsPaperless) {
                 <p class="font-xsmall flush">This option allows you to opt out this user from paperless</p>
             } else {
                 <p class="font-xsmall flush">This user already opted out from paperless</p>
             }
             </div>
         </div>
-        @if(preference.genericPaperless) {
+        @if(preference.genericPaperless || preference.taxCreditsPaperless) {
             <div id="confirm" class="accordion__body @if(!reason.hasErrors){hidden}" data-accordion-body aria-hidden="true">
 
                 <p class="font-xsmall">Are you sure you wish to opt this user out?</p>

@@ -32,7 +32,7 @@
         </tr>
         <tr>
             <td>Opted in to paperless for tax credits terms and conditions</td>
-            <td>@{if(preference.genericPaperless) "Yes" else "No"}</td>
+            <td>@{if(preference.taxCreditsPaperless) "Yes" else "No"}</td>
         </tr>
         @preference.email.map { email =>
             <tr>
