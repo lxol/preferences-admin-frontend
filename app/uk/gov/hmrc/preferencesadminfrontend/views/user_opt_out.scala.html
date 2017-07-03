@@ -41,14 +41,14 @@
                 </a>
             </div>
             <div class="accordion__row__right align--top">
-            @if(preference.paperless) {
+            @if(preference.genericPaperless) {
                 <p class="font-xsmall flush">This option allows you to opt out this user from paperless</p>
             } else {
                 <p class="font-xsmall flush">This user already opted out from paperless</p>
             }
             </div>
         </div>
-        @if(preference.paperless) {
+        @if(preference.genericPaperless) {
             <div id="confirm" class="accordion__body @if(!reason.hasErrors){hidden}" data-accordion-body aria-hidden="true">
 
                 <p class="font-xsmall">Are you sure you wish to opt this user out?</p>

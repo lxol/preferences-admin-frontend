@@ -27,8 +27,12 @@
             <td>@preference.taxIdentifiers.find(id => id.name == "sautr").fold("Not available")(_.value)</td>
         </tr>
         <tr>
-            <td>Opted in to paperless</td>
-            <td>@{if(preference.paperless) "Yes" else "No"}</td>
+            <td>Opted in to paperless for generic terms and conditions</td>
+            <td>@{if(preference.genericPaperless) "Yes" else "No"}</td>
+        </tr>
+        <tr>
+            <td>Opted in to paperless for tax credits terms and conditions</td>
+            <td>@{if(preference.genericPaperless) "Yes" else "No"}</td>
         </tr>
         @preference.email.map { email =>
             <tr>

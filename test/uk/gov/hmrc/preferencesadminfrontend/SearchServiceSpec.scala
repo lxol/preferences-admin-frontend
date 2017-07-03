@@ -137,7 +137,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
   "createSearchEvent" should {
     "generate the correct event when the preference exists" in new TestCase {
-      val preference = Preference(paperless = true, email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
+      val preference = Preference(genericPaperless = true, taxCreditsPaperless = true, email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
       val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), Some(preference))
 
       event.auditSource shouldBe "preferences-admin-frontend"
@@ -147,7 +147,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
         "query" -> Json.obj("name" -> "sautr", "value" -> "123"),
         "result" -> "Found",
         "preference" -> Json.obj(
-          "paperless" -> true,
+          "genericPaperless" -> true,
+          "taxCreditsPaperless" -> true,
           "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true),
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> "sautr", "value" -> "123"), Json.obj("name" -> "nino", "value" -> "ABC"))
         )
@@ -182,12 +183,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
         "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
         "optOutReason" -> "my optOut reason",
         "originalPreference" -> Json.obj(
-          "paperless" -> true,
+          "genericPaperless" -> true,
+          "taxCreditsPaperless" -> false,
           "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true),
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
         "newPreference" -> Json.obj(
-          "paperless" -> false,
+          "genericPaperless" -> false,
+          "taxCreditsPaperless" -> false,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         )
       )
@@ -204,11 +207,13 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
         "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
         "optOutReason" -> "my optOut reason",
         "originalPreference" -> Json.obj(
-          "paperless" -> false,
+          "genericPaperless" -> false,
+          "taxCreditsPaperless" -> false,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
         "newPreference" -> Json.obj(
-          "paperless" -> false,
+          "genericPaperless" -> false,
+          "taxCreditsPaperless" -> false,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
         "reasonOfFailure" -> "Preference already opted out"
@@ -258,12 +263,18 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     val invalidNino = TaxIdentifier("nino", "123123456S")
 
     val verifiedEmail = Email("john.doe@digital.hmrc.gov.uk", verified = true)
-    val optedInPreferenceDetails = Some(PreferenceDetails(paperless = true, Some(verifiedEmail)))
-    val optedOutPreferenceDetails = Some(PreferenceDetails(paperless = false, None))
+    def preferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean) = {
+      val email = if (genericPaperless | taxCreditsPaperless) Some(verifiedEmail) else None
+      Some(PreferenceDetails(genericPaperless, taxCreditsPaperless, email))
+    }
+
+    val optedInPreferenceDetails = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false)
+    val optedOutPreferenceDetails = preferenceDetails(genericPaperless = false, taxCreditsPaperless = false)
+
     val taxIdentifiers = Seq(validSaUtr, validNino)
 
-    val optedInPreference = Preference(paperless = true, email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
-    val optedOutPreference = Preference(paperless = false, email = None, taxIdentifiers = taxIdentifiers)
+    val optedInPreference = Preference(genericPaperless = true, taxCreditsPaperless = false, email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
+    val optedOutPreference = Preference(genericPaperless = false, taxCreditsPaperless = false, email = None, taxIdentifiers = taxIdentifiers)
 
     val auditConnector = mock[AuditConnector]
     val entityResolverConnector = mock[EntityResolverConnector]

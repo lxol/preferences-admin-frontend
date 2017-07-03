@@ -87,47 +87,75 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
   "getPreferenceDetails" should {
 
-    "return paperless preference true and valid email address and verification true if user is opted in for saUtr" in new TestCase {
+    "return generic paperless preference true and valid email address and verification true if user is opted in for saUtr" in new TestCase {
       val expectedPath = s"/portal/preferences/sa/${sautr.value}"
-      val responseJson = preferenceDetailsResponseForOptedIn(true)
+      val responseJson = preferenceDetailsResponseForGenericOptedIn(true)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
-      result.get.paperless shouldBe true
+      result.get.genericPaperless shouldBe true
+      result.get.taxCreditsPaperless shouldBe false
       result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
     }
 
-    "return paperless preference true and valid email address and verification false if user is opted in for saUtr" in new TestCase {
+    "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits" in new TestCase {
+      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val responseJson = preferenceDetailsResponseForTaxCreditsOptedIn(emailVerified = true)
+
+      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
+
+      result shouldBe defined
+      result.get.genericPaperless shouldBe false
+      result.get.taxCreditsPaperless shouldBe true
+      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
+    }
+
+    "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits and Generic" in new TestCase {
+      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val responseJson = preferenceDetailsResponseForBothOptedIn(emailVerified = true)
+
+      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
+
+      result shouldBe defined
+      result.get.genericPaperless shouldBe true
+      result.get.taxCreditsPaperless shouldBe true
+      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
+    }
+
+    "return generic paperless preference true and valid email address and verification false if user is opted in for saUtr" in new TestCase {
       val expectedPath = s"/portal/preferences/sa/${sautr.value}"
-      val responseJson = preferenceDetailsResponseForOptedIn(false)
+      val responseJson = preferenceDetailsResponseForGenericOptedIn(false)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
-      result.get.paperless shouldBe true
+      result.get.genericPaperless shouldBe true
+      result.get.taxCreditsPaperless shouldBe false
       result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", false))
     }
 
-    "return paperless preference false and email as 'None' if user is opted out for saUtr" in new TestCase {
+    "return generic paperless preference false and email as 'None' if user is opted out for saUtr" in new TestCase {
       val expectedPath = s"/portal/preferences/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseForOptedOut()
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
-      result.get.paperless shouldBe false
+      result.get.genericPaperless shouldBe false
+      result.get.taxCreditsPaperless shouldBe false
       result.get.email shouldBe None
     }
 
     "return email address and verification if user is opted in for nino" in new TestCase {
       val expectedPath = s"/portal/preferences/paye/${nino.value}"
-      val responseJson = preferenceDetailsResponseForOptedIn(true)
+      val responseJson = preferenceDetailsResponseForGenericOptedIn(true)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
 
       result shouldBe defined
-      result.get.paperless shouldBe true
+      result.get.genericPaperless shouldBe true
+      result.get.taxCreditsPaperless shouldBe false
       result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
     }
 
@@ -235,11 +263,57 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
       taxIdsJson.foldLeft(Json.obj("_id" -> "6a048719-3d4b-4a3e-9440-17b238807bc9"))(_ + _)
     }
 
-    def preferenceDetailsResponseForOptedIn(emailVerified: Boolean) = {
+    def preferenceDetailsResponseForGenericOptedIn(emailVerified: Boolean) = {
       Json.parse(
         s"""
            |{
            |  "digital": true,
+           |  "termsAndConditions": {
+           |    "generic": {
+           |      "accepted": true
+           |    }
+           |  },
+           |  "email": {
+           |    "email": "john.doe@digital.hmrc.gov.uk",
+           |    "status": "${if (emailVerified) "verified" else ""}",
+           |    "mailboxFull": false
+           |  }
+           |}
+       """.stripMargin)
+    }
+
+    def preferenceDetailsResponseForTaxCreditsOptedIn(emailVerified: Boolean) = {
+      Json.parse(
+        s"""
+           |{
+           |  "digital": true,
+           |  "termsAndConditions": {
+           |    "taxCredits": {
+           |      "accepted": true
+           |    }
+           |  },
+           |  "email": {
+           |    "email": "john.doe@digital.hmrc.gov.uk",
+           |    "status": "${if (emailVerified) "verified" else ""}",
+           |    "mailboxFull": false
+           |  }
+           |}
+       """.stripMargin)
+    }
+
+    def preferenceDetailsResponseForBothOptedIn(emailVerified: Boolean) = {
+      Json.parse(
+        s"""
+           |{
+           |  "digital": true,
+           |  "termsAndConditions": {
+           |    "generic": {
+           |      "accepted": true
+           |    },
+           |    "taxCredits": {
+           |      "accepted": true
+           |    }
+           |  },
            |  "email": {
            |    "email": "john.doe@digital.hmrc.gov.uk",
            |    "status": "${if (emailVerified) "verified" else ""}",
@@ -253,7 +327,12 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
       Json.parse(
         s"""
            |{
-           |  "digital": false
+           |  "digital": false,
+           |   "termsAndConditions": {
+           |    "generic": {
+           |      "accepted": false
+           |    }
+           |  }
            |}
        """.stripMargin)
     }

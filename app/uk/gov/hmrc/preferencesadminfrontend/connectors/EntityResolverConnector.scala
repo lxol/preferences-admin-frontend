@@ -97,12 +97,13 @@ object Entity {
   val formats = Json.format[Entity]
 }
 
-case class PreferenceDetails(paperless: Boolean, email: Option[Email])
+case class PreferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean, email: Option[Email])
 
 object PreferenceDetails {
 
   implicit val reads: Reads[PreferenceDetails] = (
-    (JsPath \ "digital").read[Boolean] and
+    (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
+    (JsPath \ "termsAndConditions" \ "taxCredits").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
       (JsPath \ "email").readNullable[Email]
-    ) ((paperless, email) => PreferenceDetails(paperless, email))
+    ) ((genericPaperless, taxCreditsPaperless, email) => PreferenceDetails(genericPaperless, taxCreditsPaperless, email))
 }
