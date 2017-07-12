@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend
 
+
 import org.scalatest.mockito.MockitoSugar
 import play.api.Configuration
 import uk.gov.hmrc.play.config.inject.RunMode

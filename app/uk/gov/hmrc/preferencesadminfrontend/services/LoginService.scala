@@ -18,6 +18,7 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.Inject
 
+import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigException.Missing
 import play.api.Configuration
 import uk.gov.hmrc.play.config.inject.RunMode
@@ -35,9 +36,11 @@ class LoginServiceConfiguration @Inject()(configuration: Configuration, runMode:
   lazy val authorisedUsers: Seq[User] = {
     configuration.getConfigSeq(s"${runMode.env}.users").fold(throw new Missing("Property users missing"))(_.map {
       userConfig: Configuration =>
+        val encodedPwd = userConfig.getString("password").getOrElse(throw new Missing("Property password missing"))
+        val decodedPwd = new String(BaseEncoding.base64().decode(encodedPwd))
         User(
           userConfig.getString("username").getOrElse(throw new Missing("Property username missing")),
-          userConfig.getString("password").getOrElse(throw new Missing("Property password missing"))
+          decodedPwd
         )
     })
   }

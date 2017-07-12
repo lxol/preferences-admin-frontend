@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services
 
+import com.google.common.base.Charsets
+import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigException.Missing
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
@@ -28,10 +30,10 @@ class LoginServiceConfigurationSpec extends UnitSpec {
 
   "authorisedUsers" should {
 
-    "return a Seq of users if the configuration is valid for a single user" in new TestCase {
+    "return a Seq of users if the configuration is valid for a single user with encoded password" in new TestCase {
       val mapUser = Map(
         "username" -> user.username,
-        "password" -> user.password
+        "password" -> BaseEncoding.base64().encode(user.password.getBytes(Charsets.UTF_8))
       )
 
       val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapUser),testRunMode)
@@ -40,10 +42,10 @@ class LoginServiceConfigurationSpec extends UnitSpec {
       loginServiceConfiguration.authorisedUsers shouldBe Seq(user)
     }
 
-    "return a Seq of users if the configuration is valid for multiple users" in new TestCase {
+    "return a Seq of users if the configuration is valid for multiple users with encoded password" in new TestCase {
       val mapUser = Map(
         "username" -> user.username,
-        "password" -> user.password
+        "password" -> BaseEncoding.base64().encode(user.password.getBytes(Charsets.UTF_8))
       )
 
       val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapUser,mapUser),testRunMode)
