@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,17 @@ import javax.inject.Inject
 
 import akka.stream.Materializer
 import play.api.Configuration
-import uk.gov.hmrc.play.audit.filters.FrontendAuditFilter
-import uk.gov.hmrc.play.audit.http.config.LoadAuditingConfig
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.inject.{AppName, RunMode}
+import uk.gov.hmrc.play.frontend.filters.FrontendAuditFilter
+import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 
-class PreferencesFrontendAuditFilter @Inject()(configuration: Configuration, name: AppName, runMode: RunMode)(implicit val mat: Materializer) extends FrontendAuditFilter {
+class PreferencesFrontendAuditFilter @Inject()(configuration: Configuration, name: AppName,
+                                               runMode: RunMode,
+                                               frontendAuditConnector: FrontendAuditConnector)(implicit val mat: Materializer) extends FrontendAuditFilter {
 
   val maskedFormFields = Seq()
   val applicationPort = None
-  lazy val auditConnector = AuditConnector(LoadAuditingConfig(s"${runMode.env}.auditing"))
+  lazy val auditConnector = frontendAuditConnector
 
   def controllerNeedsAuditing(controllerName: String) =
     configuration.getBoolean(s"controllers.$controllerName.needsAuditing").getOrElse(true)

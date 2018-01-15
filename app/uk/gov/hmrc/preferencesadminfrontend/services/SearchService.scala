@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,19 +23,19 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.config.inject.AppName
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, auditConnector: AuditConnector, appName: AppName) {
 
   def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
     val preferenceOpt = getPreference(taxId)
-    preferenceOpt.foreach(preference => auditConnector.sendEvent(createSearchEvent(user.username, taxId, preference)))
+    preferenceOpt.foreach(preference => auditConnector.sendExtendedEvent(createSearchEvent(user.username, taxId, preference)))
     preferenceOpt
   }
 
@@ -54,7 +54,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
       optoutResult <- entityResolverConnector.optOut(taxId)
       newPreference <- getPreference(taxId)
     } yield {
-      auditConnector.sendEvent(createOptOutEvent(user.username, taxId, originalPreference, newPreference, optoutResult, reason))
+      auditConnector.sendExtendedEvent(createOptOutEvent(user.username, taxId, originalPreference, newPreference, optoutResult, reason))
       optoutResult
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import uk.gov.hmrc.crypto.{ApplicationCrypto, ApplicationCryptoDI}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.inject.{DefaultRunMode, RunMode}
 import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
-import uk.gov.hmrc.play.http.logging.filters.FrontendLoggingFilter
 import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.config._
 import uk.gov.hmrc.preferencesadminfrontend.config.filters.PreferencesFrontendLoggingFilter
+import uk.gov.hmrc.play.frontend.filters.FrontendLoggingFilter
 
 class Module extends AbstractModule {
 

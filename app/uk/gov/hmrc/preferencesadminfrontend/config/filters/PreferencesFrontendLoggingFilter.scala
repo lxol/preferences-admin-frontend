@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import javax.inject.Singleton
 import akka.stream.Materializer
 import com.google.inject.Inject
 import play.api.Configuration
-import uk.gov.hmrc.play.http.logging.filters.FrontendLoggingFilter
+import uk.gov.hmrc.play.frontend.filters.FrontendLoggingFilter
 
 @Singleton
 class PreferencesFrontendLoggingFilter @Inject()(configuration: Configuration)(implicit val mat: Materializer) extends FrontendLoggingFilter {
