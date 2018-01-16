@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.config.inject.AppName
 import uk.gov.hmrc.play.frontend.controller.FrontendController
-import uk.gov.hmrc.play.http.SessionKeys
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.SessionKeys
 
 @Singleton
 class LoginController @Inject()(loginService: LoginService, auditConnector: AuditConnector, appName: AppName)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import play.api.test.Helpers.{headers, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.OptedOut
@@ -42,6 +41,7 @@ import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, Preference, T
 import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
 
 
 class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with GuiceOneAppPerSuite {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status
 import play.api.libs.json._
 import uk.gov.hmrc.play.config.inject.ServicesConfig
-import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, EntityResolverConnector, OptedOut, PreferenceNotFound}
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
@@ -31,6 +30,7 @@ import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
+import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpResponse }
 
 class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
@@ -219,12 +219,13 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
     lazy val serviceConfig = app.injector.instanceOf[ServicesConfig]
+    lazy val frontendAuditConnector =  app.injector.instanceOf[FrontendAuditConnector]
     lazy val mockResponse = mock[HttpResponse]
     val emptyJson = Json.obj()
 
 
     def entityConnectorGetMock(expectedPath: String, jsonBody: JsValue, status: Int): EntityResolverConnector = {
-      new EntityResolverConnector(serviceConfig) {
+      new EntityResolverConnector(serviceConfig, frontendAuditConnector) {
         override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
           url should include(expectedPath)
           when(mockResponse.json).thenReturn(jsonBody)
@@ -235,7 +236,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     def entityConnectorGetMock(expectedPath: String, error: Throwable): EntityResolverConnector = {
-      new EntityResolverConnector(serviceConfig) {
+      new EntityResolverConnector(serviceConfig, frontendAuditConnector) {
         override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
           url should include(expectedPath)
           Future.failed(error)
@@ -244,7 +245,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     def entityConnectorPostMock(expectedPath: String, jsonBody: JsValue, status: Int): EntityResolverConnector = {
-      new EntityResolverConnector(serviceConfig) {
+      new EntityResolverConnector(serviceConfig, frontendAuditConnector) {
         override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
           url should include(expectedPath)
           when(mockResponse.json).thenReturn(jsonBody)

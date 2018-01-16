@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ import play.api.mvc.{Request, RequestHeader, Result, Results}
 import play.api.routing.Router
 import play.api.{Configuration, Environment, OptionalSourceMapper, UsefulException}
 import play.twirl.api.Html
-import uk.gov.hmrc.play.audit.http.config.ErrorAuditingSettings
 import uk.gov.hmrc.play.config.inject.AppName
 import uk.gov.hmrc.play.frontend.bootstrap.ShowErrorPage
 import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
+import uk.gov.hmrc.play.audit.http.HttpAuditing
 
 import scala.concurrent.Future
 
@@ -43,7 +43,7 @@ class ErrorHandler @Inject()(env: Environment,
                              applicationName: AppName)
   extends DefaultHttpErrorHandler(env, config, sourceMapper, router) with I18nSupport {
 
-  val impl = new ErrorAuditingSettings with ShowErrorPage {
+  val impl = new HttpAuditing with ShowErrorPage {
     override val auditConnector: FrontendAuditConnector = frontendAuditConnector
     lazy val appName: String = applicationName.appName
 
