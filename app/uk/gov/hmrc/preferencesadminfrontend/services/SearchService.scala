@@ -44,7 +44,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
     for {
       preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
       taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
-    } yield preferenceDetail.map(details => Preference(details.genericPaperless, details.taxCreditsPaperless, details.email, taxIdentifiers))
+    } yield preferenceDetail.map(details => Preference(details.genericPaperless, details.genericUpdatedAt, details.taxCreditsPaperless, details.email, taxIdentifiers))
   }
 
   def optOut(taxId: TaxIdentifier, reason: String)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext) : Future[OptOutResult] = {

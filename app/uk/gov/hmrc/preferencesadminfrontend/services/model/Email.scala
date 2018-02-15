@@ -16,20 +16,22 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
+import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
 
-case class Email(address: String, verified: Boolean)
+case class Email(address: String, verified: Boolean, verifiedOn: Option[DateTime])
 
 object Email {
   implicit val writes: Writes[Email] = Json.writes[Email]
 
   implicit val reads: Reads[Email] = (
     (JsPath \ "email").read[String] and
-      (JsPath \ "status").read[String]
-    ) ((address, status) => {
+      (JsPath \ "status").read[String] and
+      (JsPath \ "verifiedOn").readNullable[DateTime]
+    ) ((address, status, verifiedOn) => {
     val verified = (status == "verified")
-    Email(address, verified)
+    Email(address, verified, verifiedOn)
   })
 }
 

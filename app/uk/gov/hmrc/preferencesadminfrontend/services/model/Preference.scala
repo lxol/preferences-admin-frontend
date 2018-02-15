@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
+import org.joda.time.DateTime
 import play.api.libs.json.Json
 
-case class Preference(genericPaperless: Boolean, taxCreditsPaperless: Boolean,  email: Option[Email], taxIdentifiers: Seq[TaxIdentifier])
+case class Preference(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean,  email: Option[Email], taxIdentifiers: Seq[TaxIdentifier])
 
 object Preference {
   implicit val format = Json.format[Preference]

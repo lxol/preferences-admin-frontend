@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend
 
+import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.ArgumentMatcher
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
@@ -137,7 +138,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
   "createSearchEvent" should {
     "generate the correct event when the preference exists" in new TestCase {
-      val preference = Preference(genericPaperless = true, taxCreditsPaperless = true, email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
       val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), Some(preference))
 
       event.auditSource shouldBe "preferences-admin-frontend"
@@ -148,8 +149,9 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
         "result" -> "Found",
         "preference" -> Json.obj(
           "genericPaperless" -> true,
+          "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> true,
-          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true),
+          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true, "verifiedOn" -> 1518652800000L),
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> "sautr", "value" -> "123"), Json.obj("name" -> "nino", "value" -> "ABC"))
         )
       )
@@ -184,12 +186,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
         "optOutReason" -> "my optOut reason",
         "originalPreference" -> Json.obj(
           "genericPaperless" -> true,
+          "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
-          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true),
+          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true, "verifiedOn" -> 1518652800000L),
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
         "newPreference" -> Json.obj(
           "genericPaperless" -> false,
+          "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         )
@@ -208,11 +212,13 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
         "optOutReason" -> "my optOut reason",
         "originalPreference" -> Json.obj(
           "genericPaperless" -> false,
+          "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
         "newPreference" -> Json.obj(
           "genericPaperless" -> false,
+          "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
@@ -262,10 +268,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     val validNino = TaxIdentifier("nino", "CE067583D")
     val invalidNino = TaxIdentifier("nino", "123123456S")
 
-    val verifiedEmail = Email("john.doe@digital.hmrc.gov.uk", verified = true)
+    val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
+    val verifiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
+
+    val verifiedEmail = Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)
+
     def preferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean) = {
       val email = if (genericPaperless | taxCreditsPaperless) Some(verifiedEmail) else None
-      Some(PreferenceDetails(genericPaperless, taxCreditsPaperless, email))
+      Some(PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, email))
     }
 
     val optedInPreferenceDetails = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false)
@@ -273,8 +283,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
     val taxIdentifiers = Seq(validSaUtr, validNino)
 
-    val optedInPreference = Preference(genericPaperless = true, taxCreditsPaperless = false, email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
-    val optedOutPreference = Preference(genericPaperless = false, taxCreditsPaperless = false, email = None, taxIdentifiers = taxIdentifiers)
+    val optedInPreference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
+    val optedOutPreference = Preference(genericPaperless = false, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, email = None, taxIdentifiers = taxIdentifiers)
 
     val auditConnector = mock[AuditConnector]
     val entityResolverConnector = mock[EntityResolverConnector]
