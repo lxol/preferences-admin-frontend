@@ -17,6 +17,7 @@
 package uk.gov.hmrc.preferencesadminfrontend
 
 import akka.stream.Materializer
+import org.joda.time.{DateTime, DateTimeZone}
 import org.jsoup.Jsoup
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -71,22 +72,26 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     val queryParamsForValidNino = "?name=nino&value=CE067583D"
     val queryParamsForValidLowercaseNino = "?name=nino&value=ce067583d"
     val queryParamsForInvalidNino = "?name=nino&value=1234567"
+    val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
+    val verifiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
 
     "return a preference if tax identifier exists" in new TestCase {
 
-      val preference = Preference(genericPaperless = true, taxCreditsPaperless = true,  Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true,  Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
       when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
-      bodyOf(result).futureValue should include ("john.doe@digital.hmrc.gov.uk")
+      val body: String = bodyOf(result).futureValue
+      body should include ("john.doe@digital.hmrc.gov.uk")
+      body should include ("2018-02-15T00:00:00.000Z")
     }
 
 
     "include a hidden form to opt the user out" in new TestCase {
 
-      val preference = Preference(genericPaperless = true, taxCreditsPaperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
       when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
@@ -108,7 +113,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     }
 
     "call the search service with an uppercase taxIdentifier if a lowercase taxIdentifier is provided through the Form" in new TestCase {
-      val preference = Preference(genericPaperless = true, taxCreditsPaperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
       when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidLowercaseNino).withSession(User.sessionKey -> "user")))
@@ -125,8 +130,10 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
 
 
   "submit opt out request" should {
+    val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
+    val verifiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
     "redirect to the confirm page" in new TestCase with ScalaFutures {
-      val preference = Preference(genericPaperless = true, taxCreditsPaperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true)), Seq())
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
       when(searchServiceMock.optOut(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")),any())(any(), any(), any())).thenReturn(Future.successful(OptedOut))
 
       private val request = FakeRequest(Helpers.POST, controllers.routes.SearchController.optOut("nino", "CE067583D").url)

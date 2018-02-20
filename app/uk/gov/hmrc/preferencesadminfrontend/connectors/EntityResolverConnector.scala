@@ -18,6 +18,7 @@ package uk.gov.hmrc.preferencesadminfrontend.connectors
 
 import javax.inject.{Inject, Singleton}
 
+import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.functional.syntax._
@@ -32,6 +33,8 @@ import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.config.AppName
+
+import scala.util.Try
 
 
 @Singleton
@@ -103,13 +106,26 @@ object Entity {
   val formats = Json.format[Entity]
 }
 
-case class PreferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean, email: Option[Email])
+case class PreferenceDetails(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean, email: Option[Email])
 
 object PreferenceDetails {
+  implicit val localDateRead: Reads[Option[DateTime]] = new Reads[Option[DateTime]] {
+    override def reads(json: JsValue): JsResult[Option[DateTime]] = {
+      json match {
+        case JsNumber(dateTime) => Try {
+          JsSuccess(Some(new DateTime(dateTime.longValue, DateTimeZone.UTC)))
+        }.getOrElse {
+          JsError(s"$dateTime is not a valid date")
+        }
+        case _ => JsError(s"Expected value to be a date, was actually $json")
+      }
+    }
+  }
 
   implicit val reads: Reads[PreferenceDetails] = (
     (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
+    (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(None: Option[DateTime])(m => (m \ "updatedAt").asOpt[DateTime])) and
     (JsPath \ "termsAndConditions" \ "taxCredits").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
       (JsPath \ "email").readNullable[Email]
-    ) ((genericPaperless, taxCreditsPaperless, email) => PreferenceDetails(genericPaperless, taxCreditsPaperless, email))
+    ) ((genericPaperless, genericUpdatedAt, taxCreditsPaperless, email) => PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, email))
 }

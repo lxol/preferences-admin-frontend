@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend
 
+import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -30,7 +31,7 @@ import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
-import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse}
 
 class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
@@ -77,7 +78,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
     "return empty sequence  if Entity-Resolver cannot parse parameter" in new TestCase {
       val expectedPath = s"/entity-resolver/paye/${nino.value}"
-      val error = new BadRequestException(message=s"""'{"statusCode":400,"message":"Cannot parse parameter '${nino.name}' with value '${nino.value}'"}'""")
+      val error = new BadRequestException(message =s"""'{"statusCode":400,"message":"Cannot parse parameter '${nino.name}' with value '${nino.value}'"}'""")
 
       val result = entityConnectorGetMock(expectedPath, error).getTaxIdentifiers(nino).futureValue
 
@@ -86,6 +87,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
   }
 
   "getPreferenceDetails" should {
+    val verfiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
 
     "return generic paperless preference true and valid email address and verification true if user is opted in for saUtr" in new TestCase {
       val expectedPath = s"/portal/preferences/sa/${sautr.value}"
@@ -96,7 +98,9 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
       result shouldBe defined
       result.get.genericPaperless shouldBe true
       result.get.taxCreditsPaperless shouldBe false
-      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
+      result.get.email.get.address shouldBe "john.doe@digital.hmrc.gov.uk"
+      result.get.email.get.verified shouldBe true
+      result.get.email.get.verifiedOn.get.isEqual(verfiedOn.get.getMillis) shouldBe true
     }
 
     "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits" in new TestCase {
@@ -108,7 +112,9 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
       result shouldBe defined
       result.get.genericPaperless shouldBe false
       result.get.taxCreditsPaperless shouldBe true
-      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
+      result.get.email.get.address shouldBe "john.doe@digital.hmrc.gov.uk"
+      result.get.email.get.verified shouldBe true
+      result.get.email.get.verifiedOn.get.isEqual(verfiedOn.get.getMillis) shouldBe true
     }
 
     "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits and Generic" in new TestCase {
@@ -120,7 +126,9 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
       result shouldBe defined
       result.get.genericPaperless shouldBe true
       result.get.taxCreditsPaperless shouldBe true
-      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
+      result.get.email.get.address shouldBe "john.doe@digital.hmrc.gov.uk"
+      result.get.email.get.verified shouldBe true
+      result.get.email.get.verifiedOn.get.isEqual(verfiedOn.get.getMillis) shouldBe true
     }
 
     "return generic paperless preference true and valid email address and verification false if user is opted in for saUtr" in new TestCase {
@@ -132,7 +140,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
       result shouldBe defined
       result.get.genericPaperless shouldBe true
       result.get.taxCreditsPaperless shouldBe false
-      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", false))
+      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", false, None))
     }
 
     "return generic paperless preference false and email as 'None' if user is opted out for saUtr" in new TestCase {
@@ -156,7 +164,9 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
       result shouldBe defined
       result.get.genericPaperless shouldBe true
       result.get.taxCreditsPaperless shouldBe false
-      result.get.email shouldBe Some(Email("john.doe@digital.hmrc.gov.uk", true))
+      result.get.email.get.address shouldBe "john.doe@digital.hmrc.gov.uk"
+      result.get.email.get.verified shouldBe true
+      result.get.email.get.verifiedOn.get.isEqual(verfiedOn.get.getMillis) shouldBe true
     }
 
     "return None if taxId does not exist" in new TestCase {
@@ -169,7 +179,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
     "return None if taxId is malformed" in new TestCase {
       val expectedPath = s"/portal/preferences/paye/${nino.value}"
-      val error = new BadRequestException(message=s"""'{"statusCode":400,"message":"Cannot parse parameter '${nino.name}' with value '${nino.value}'"}'""")
+      val error = new BadRequestException(message =s"""'{"statusCode":400,"message":"Cannot parse parameter '${nino.name}' with value '${nino.value}'"}'""")
 
       val result = entityConnectorGetMock(expectedPath, error).getPreferenceDetails(nino).futureValue
 
@@ -219,7 +229,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
     lazy val serviceConfig = app.injector.instanceOf[ServicesConfig]
-    lazy val frontendAuditConnector =  app.injector.instanceOf[FrontendAuditConnector]
+    lazy val frontendAuditConnector = app.injector.instanceOf[FrontendAuditConnector]
     lazy val mockResponse = mock[HttpResponse]
     val emptyJson = Json.obj()
 
@@ -256,7 +266,6 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
 
-
     def taxIdentifiersResponseFor(taxIds: TaxIdentifier*) = {
       val taxIdsJson: Seq[(String, JsValue)] = taxIds.map {
         case TaxIdentifier(name, value) => name -> JsString(value)
@@ -265,18 +274,24 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     def preferenceDetailsResponseForGenericOptedIn(emailVerified: Boolean) = {
+      val genericUpdatedAt = 1518652800000L
+      val genericUpdatedAtStr = s""" "updatedAt": $genericUpdatedAt """
+      val verifiedOnDate = 1518652800000L
+      val verifiedOnDateStr = if (emailVerified) s""" "verifiedOn": $verifiedOnDate, """ else ""
       Json.parse(
         s"""
            |{
            |  "digital": true,
            |  "termsAndConditions": {
            |    "generic": {
-           |      "accepted": true
+           |      "accepted": true,
+           |      $genericUpdatedAtStr
            |    }
            |  },
            |  "email": {
            |    "email": "john.doe@digital.hmrc.gov.uk",
            |    "status": "${if (emailVerified) "verified" else ""}",
+           |    $verifiedOnDateStr
            |    "mailboxFull": false
            |  }
            |}
@@ -284,18 +299,24 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     def preferenceDetailsResponseForTaxCreditsOptedIn(emailVerified: Boolean) = {
+      val genericUpdatedAt = 1518652800000L
+      val genericUpdatedAtStr = s""" "updatedAt": $genericUpdatedAt """
+      val verifiedOnDate = 1518652800000L
+      val verifiedOnDateStr = if (emailVerified) s""" "verifiedOn": $verifiedOnDate, """ else ""
       Json.parse(
         s"""
            |{
            |  "digital": true,
            |  "termsAndConditions": {
            |    "taxCredits": {
-           |      "accepted": true
+           |      "accepted": true,
+           |      $genericUpdatedAtStr
            |    }
            |  },
            |  "email": {
            |    "email": "john.doe@digital.hmrc.gov.uk",
            |    "status": "${if (emailVerified) "verified" else ""}",
+           |    $verifiedOnDateStr
            |    "mailboxFull": false
            |  }
            |}
@@ -303,13 +324,18 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     def preferenceDetailsResponseForBothOptedIn(emailVerified: Boolean) = {
+      val genericUpdatedAt = 1518652800000L
+      val genericUpdatedAtStr = s""" "updatedAt": $genericUpdatedAt """
+      val verifiedOnDate = 1518652800000L
+      val verifiedOnDateStr = if (emailVerified) s""" "verifiedOn": $verifiedOnDate, """ else ""
       Json.parse(
         s"""
            |{
            |  "digital": true,
            |  "termsAndConditions": {
            |    "generic": {
-           |      "accepted": true
+           |      "accepted": true,
+           |      $genericUpdatedAtStr
            |    },
            |    "taxCredits": {
            |      "accepted": true
@@ -318,6 +344,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
            |  "email": {
            |    "email": "john.doe@digital.hmrc.gov.uk",
            |    "status": "${if (emailVerified) "verified" else ""}",
+           |    $verifiedOnDateStr
            |    "mailboxFull": false
            |  }
            |}
@@ -325,13 +352,16 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     def preferenceDetailsResponseForOptedOut() = {
+      val genericUpdatedAt = 1518652800000L
+      val genericUpdatedAtStr = s""" "updatedAt": $genericUpdatedAt """
       Json.parse(
         s"""
            |{
            |  "digital": false,
            |   "termsAndConditions": {
            |    "generic": {
-           |      "accepted": false
+           |      "accepted": false,
+           |      $genericUpdatedAtStr
            |    }
            |  }
            |}

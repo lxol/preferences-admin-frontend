@@ -26,10 +26,12 @@
             <td>SA Utr</td>
             <td>@preference.taxIdentifiers.find(id => id.name == "sautr").fold("Not available")(_.value)</td>
         </tr>
+        @preference.genericUpdatedAt.map { date =>
         <tr>
-            <td>Opted in to paperless for generic terms and conditions</td>
-            <td>@{if(preference.genericPaperless) "Yes" else "No"}</td>
+            <td><b>@{if(preference.genericPaperless) "Opted In" else "Opted Out"}</b> @{if(preference.genericPaperless) "to" else "of"} paperless for generic terms and conditions</td>
+            <td>@{org.joda.time.format.DateTimeFormat.forPattern("d MMMM yyyy a h:m:s").print(date)}s</td>
         </tr>
+        }
         <tr>
             <td>Opted in to paperless for tax credits terms and conditions</td>
             <td>@{if(preference.taxCreditsPaperless) "Yes" else "No"}</td>
@@ -39,11 +41,12 @@
                 <td>Email address</td>
                 <td>@email.address</td>
             </tr>
-
+        @email.verifiedOn.map { date =>
             <tr>
-                <td>Email Verified</td>
-                <td>@{if(email.verified) "Yes" else "No"}</td>
+                <td>Date time Email Verified</td>
+                <td>@{org.joda.time.format.DateTimeFormat.forPattern("d MMMM yyyy a h:m:s").print(date)}s</td>
             </tr>
+            }
         }
     </tbody>
 </table>
