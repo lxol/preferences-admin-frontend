@@ -85,7 +85,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       status(result) shouldBe Status.OK
       val body: String = bodyOf(result).futureValue
       body should include ("john.doe@digital.hmrc.gov.uk")
-      body should include ("2018-02-15T00:00:00.000Z")
+      body should include ("15 February 2018 AM 12:0:0s")
     }
 
 
