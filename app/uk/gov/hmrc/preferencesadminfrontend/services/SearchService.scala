@@ -44,11 +44,10 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
     for {
       preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
       taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
-    } yield preferenceDetail.map(details => Preference(details.genericPaperless, details.genericUpdatedAt, details.taxCreditsPaperless, details.email, taxIdentifiers))
+    } yield preferenceDetail.map(details => Preference(details.genericPaperless, details.genericUpdatedAt, details.taxCreditsPaperless, details.taxCreditsUpdatedAt, details.email, taxIdentifiers))
   }
 
-  def optOut(taxId: TaxIdentifier, reason: String)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext) : Future[OptOutResult] = {
-
+  def optOut(taxId: TaxIdentifier, reason: String)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[OptOutResult] = {
     for {
       originalPreference <- getPreference(taxId)
       optoutResult <- entityResolverConnector.optOut(taxId)
@@ -60,7 +59,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
 
   }
 
-  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, originalPreference: Option[Preference], newPreference: Option[Preference],optOutResult: OptOutResult, reason: String) : ExtendedDataEvent = {
+  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, originalPreference: Option[Preference], newPreference: Option[Preference], optOutResult: OptOutResult, reason: String): ExtendedDataEvent = {
     val reasonOfFailureJson = optOutResult match {
       case OptedOut => Json.obj()
       case AlreadyOptedOut => Json.obj("reasonOfFailure" -> "Preference already opted out")
