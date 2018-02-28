@@ -106,7 +106,7 @@ object Entity {
   val formats = Json.format[Entity]
 }
 
-case class PreferenceDetails(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean, email: Option[Email])
+case class PreferenceDetails(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean, taxCreditsUpdatedAt : Option[DateTime], email: Option[Email])
 
 object PreferenceDetails {
   implicit val localDateRead: Reads[Option[DateTime]] = new Reads[Option[DateTime]] {
@@ -126,6 +126,7 @@ object PreferenceDetails {
     (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
     (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(None: Option[DateTime])(m => (m \ "updatedAt").asOpt[DateTime])) and
     (JsPath \ "termsAndConditions" \ "taxCredits").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
+    (JsPath \ "termsAndConditions" \ "taxCredits").readNullable[JsValue].map(_.fold(None: Option[DateTime])(m => (m \ "updatedAt").asOpt[DateTime])) and
       (JsPath \ "email").readNullable[Email]
-    ) ((genericPaperless, genericUpdatedAt, taxCreditsPaperless, email) => PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, email))
+    ) ((genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email) => PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email))
 }

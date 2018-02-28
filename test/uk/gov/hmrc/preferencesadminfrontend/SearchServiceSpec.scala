@@ -138,7 +138,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
   "createSearchEvent" should {
     "generate the correct event when the preference exists" in new TestCase {
-      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+        email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
       val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), Some(preference))
 
       event.auditSource shouldBe "preferences-admin-frontend"
@@ -151,6 +152,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
           "genericPaperless" -> true,
           "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> true,
+          "taxCreditsUpdatedAt" -> 1518652800000L,
           "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true, "verifiedOn" -> 1518652800000L),
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> "sautr", "value" -> "123"), Json.obj("name" -> "nino", "value" -> "ABC"))
         )
@@ -188,6 +190,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
           "genericPaperless" -> true,
           "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
+          "taxCreditsUpdatedAt" -> 1518652800000L,
           "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true, "verifiedOn" -> 1518652800000L),
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
@@ -195,6 +198,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
           "genericPaperless" -> false,
           "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
+          "taxCreditsUpdatedAt" -> 1518652800000L,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         )
       )
@@ -214,12 +218,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
           "genericPaperless" -> false,
           "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
+          "taxCreditsUpdatedAt" -> 1518652800000L,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
         "newPreference" -> Json.obj(
           "genericPaperless" -> false,
           "genericUpdatedAt" -> 1518652800000L,
           "taxCreditsPaperless" -> false,
+          "taxCreditsUpdatedAt" -> 1518652800000L,
           "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
         ),
         "reasonOfFailure" -> "Preference already opted out"
@@ -269,13 +275,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     val invalidNino = TaxIdentifier("nino", "123123456S")
 
     val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
+    val taxCreditsUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
     val verifiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
 
     val verifiedEmail = Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)
 
     def preferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean) = {
       val email = if (genericPaperless | taxCreditsPaperless) Some(verifiedEmail) else None
-      Some(PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, email))
+      Some(PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email))
     }
 
     val optedInPreferenceDetails = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false)
@@ -283,8 +290,10 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
     val taxIdentifiers = Seq(validSaUtr, validNino)
 
-    val optedInPreference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
-    val optedOutPreference = Preference(genericPaperless = false, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, email = None, taxIdentifiers = taxIdentifiers)
+    val optedInPreference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+      email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
+    val optedOutPreference = Preference(genericPaperless = false, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+      email = None, taxIdentifiers = taxIdentifiers)
 
     val auditConnector = mock[AuditConnector]
     val entityResolverConnector = mock[EntityResolverConnector]
