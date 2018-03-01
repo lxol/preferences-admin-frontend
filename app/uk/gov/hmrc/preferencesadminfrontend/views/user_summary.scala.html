@@ -14,7 +14,9 @@
  * limitations under the License.
  *@
 
-@(preference: uk.gov.hmrc.preferencesadminfrontend.services.model.Preference)(implicit request: Request[_], messages: Messages)
+@(preferences: List[uk.gov.hmrc.preferencesadminfrontend.services.model.Preference])(implicit request: Request[_], messages: Messages)
+
+@for(preference <- preferences){
 
 <table>
     <tbody>
@@ -50,3 +52,4 @@
         }
     </tbody>
 </table>
+}

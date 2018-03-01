@@ -85,6 +85,18 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
+    "return preference for email address user when it exists" in new TestCase {
+
+    }
+
+    "return None if that nino does not exist" in new TestCase {
+
+    }
+
+    "return multiple preferences for email address user when it exists" in new TestCase {
+
+    }
+
   }
 
   "optOut" should {
@@ -288,11 +300,12 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
     val auditConnector = mock[AuditConnector]
     val entityResolverConnector = mock[EntityResolverConnector]
+    val preferencesConnector = mock[PreferencesConnector]
     val appName = new AppName {
       protected def appNameConfiguration: Configuration = ???
       override def appName: String = "preferences-admin-frontend"
     }
-    val searchService = new SearchService(entityResolverConnector, auditConnector, appName)
+    val searchService = new SearchService(entityResolverConnector, preferencesConnector, auditConnector, appName)
 
     def isSimilar(expected: ExtendedDataEvent): ArgumentMatcher[ExtendedDataEvent] = {
       new ArgumentMatcher[ExtendedDataEvent]() {

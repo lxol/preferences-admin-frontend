@@ -37,7 +37,9 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
                                 (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
 
   def showSearchPage(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
-    implicit request => user => Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bind(Map("name" -> taxIdentifierName, "value" -> taxIdentifierValue)).discardingErrors)))
+    implicit request =>
+      implicit user =>
+        Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bind(Map("name" -> taxIdentifierName, "value" -> taxIdentifierValue)).discardingErrors)))
   }
 
   def search = AuthorisedAction.async {
@@ -47,16 +49,14 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
           errors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(errors))),
           searchTaxIdentifier => {
             searchService.searchPreference(searchTaxIdentifier).map {
-              case Some(preference) =>
-                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(OptOutReason(), searchTaxIdentifier, preference))
-              case None =>
+              case preferenceList =>
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(OptOutReason(), searchTaxIdentifier, preferenceList))
+              case Nil =>
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
             }
           }
         )
-
   }
-
 
   def optOut(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
     implicit request =>
@@ -65,12 +65,11 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
         OptOutReason().bindFromRequest.fold(
           errors => {
             searchService.getPreference(identifier).map {
-              case Some(preference) =>
-                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(errors, identifier, preference))
-              case None =>
+              case Nil =>
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
+              case preferences =>
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(errors, identifier, preferences))
             }
-
           },
           optOutReason => {
             searchService.optOut(identifier, optOutReason.reason).map {
@@ -82,16 +81,15 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
         )
   }
 
-
   def confirmed(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
     implicit request =>
       implicit user =>
         searchService.getPreference(TaxIdentifier(taxIdentifierName, taxIdentifierValue)).map {
-          case Some(preference) =>
-            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.confirmed(preference))
-          case None =>
-            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.failed(TaxIdentifier(taxIdentifierName, taxIdentifierValue), None, PreferenceNotFound.errorCode))
-        }
+          case Nil =>
+            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.failed(TaxIdentifier(taxIdentifierName, taxIdentifierValue), Nil, PreferenceNotFound.errorCode))
+          case preferences =>
+            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.confirmed(preferences))
+          }
   }
 
   def failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String) = AuthorisedAction.async {

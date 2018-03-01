@@ -15,7 +15,7 @@
  *@
 
 @(taxId: uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier,
-        preference: Option[uk.gov.hmrc.preferencesadminfrontend.services.model.Preference],
+        preferences: List[uk.gov.hmrc.preferencesadminfrontend.services.model.Preference],
         failureCode: String)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
@@ -30,12 +30,10 @@
 
     </div>
 
-    @preference.map { p =>
         <h2>User Summary</h2>
 
-        @uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(p)
+        @uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(preferences)
 
-    }
     <div style="margin-top: 100px;">
         <a class="back-link" href="/paperless/admin/search">Opt out another user</a>
     </div>

@@ -36,9 +36,14 @@
                 <input id="name-nino" type="radio"  name="name" value="nino">
                 <span class="heading-small">Nino</span>
             </label>
+
+            <label class="block-label" for="name-email" data-target="portal">
+                <input id="name-email" type="radio"  name="name" value="email">
+                <span class="heading-small">Email Id</span>
+            </label>
             
             @input(search("value"),
-                '_label -> "Tax Identifier",
+                '_label -> "Identifier",
                 '_divClass -> "form-field",
                 '_type -> "text",
                 '_inputClass -> "input--medium input--cleared"

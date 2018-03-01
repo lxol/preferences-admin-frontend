@@ -26,7 +26,7 @@ object Search {
   def apply() = Form[TaxIdentifier](
     mapping(
       "name" -> text
-        .verifying("error.name_invalid", name => name == "sautr" || name == "nino"),
+        .verifying("error.name_invalid", name => name == "sautr" || name == "nino" || name == "email"),
       "value" -> nonEmptyText
     )((name, value) => TaxIdentifier.apply(name, value.toUpperCase))(TaxIdentifier.unapply))
 }
