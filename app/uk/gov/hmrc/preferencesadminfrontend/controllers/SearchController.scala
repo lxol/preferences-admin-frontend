@@ -39,7 +39,8 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
   def showSearchPage(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
     implicit request =>
       implicit user =>
-        Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bind(Map("name" -> taxIdentifierName, "value" -> taxIdentifierValue)).discardingErrors)))
+        Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search()
+              .bind(Map("name" -> taxIdentifierName, "value" -> taxIdentifierValue)).discardingErrors)))
   }
 
   def search = AuthorisedAction.async {

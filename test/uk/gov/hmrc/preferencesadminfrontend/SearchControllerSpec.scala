@@ -69,6 +69,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
   "search(taxIdentifier)" should {
 
     val queryParamsForValidNino = "?name=nino&value=CE067583D"
+    val queryParamsForEmailid = "?name=email&value=test@test.com"
     val queryParamsForValidLowercaseNino = "?name=nino&value=ce067583d"
     val queryParamsForInvalidNino = "?name=nino&value=1234567"
     val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
@@ -87,6 +88,28 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       val body: String = bodyOf(result).futureValue
       body should include ("john.doe@digital.hmrc.gov.uk")
       body should include ("15 February 2018 AM 12:0:0s")
+    }
+
+    "return a preference if email address exists" in new TestCase {
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true,  taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+        Some(Email("test@test.com", verified = true, verifiedOn = verifiedOn)), Seq())
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(List(preference)))
+
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForEmailid).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.OK
+      val body: String = bodyOf(result).futureValue
+      body should include ("test@test.com")
+      body should include ("15 February 2018 AM 12:0:0s")
+    }
+
+    "return a not found error message if the preference associated with that emailid is not found" in new TestCase {
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Nil))
+      Mockito.reset(auditConnectorMock)
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForEmailid).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.OK
+      bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
     }
 
     "include a hidden form to opt the user out" in new TestCase {
@@ -110,7 +133,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
-      //bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
+      bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
     }
 
     "call the search service with an uppercase taxIdentifier if a lowercase taxIdentifier is provided through the Form" in new TestCase {

@@ -50,7 +50,9 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
         }
       }
     }
-    preferences.flatMap(Future.sequence(_))
+    preferences.flatMap(Future.sequence(_)).recover{
+      case _ => Nil
+    }
   }
 
   def getPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
