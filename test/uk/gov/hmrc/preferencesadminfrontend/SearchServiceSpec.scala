@@ -31,7 +31,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services._
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, EntityId, Preference, TaxIdentifier}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -86,15 +86,24 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "return preference for email address user when it exists" in new TestCase {
+      when(preferencesConnector.getPreferenceDetails(validEmailid)).thenReturn(Future.successful(optedInPreferenceDetailsList))
+      when(entityResolverConnector.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
 
+      searchService.searchPreference(validEmailid).futureValue shouldBe List(optedInPreference)
     }
 
     "return None if that nino does not exist" in new TestCase {
+      when(preferencesConnector.getPreferenceDetails(unknownEmailid)).thenReturn(Future.successful(Nil))
+      when(entityResolverConnector.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
 
+      searchService.searchPreference(unknownEmailid).futureValue shouldBe Nil
     }
 
     "return multiple preferences for email address user when it exists" in new TestCase {
+      when(preferencesConnector.getPreferenceDetails(validEmailid)).thenReturn(Future.successful(optedInPreferenceDetailsList2))
+      when(entityResolverConnector.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
 
+      searchService.searchPreference(validEmailid).futureValue shouldBe optedInPreferenceList
     }
 
   }
@@ -284,6 +293,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     val validSaUtr = TaxIdentifier("sautr", "123456789")
     val validNino = TaxIdentifier("nino", "CE067583D")
     val invalidNino = TaxIdentifier("nino", "123123456S")
+    val validEmailid = TaxIdentifier("email", "test@test.com")
+    val unknownEmailid = TaxIdentifier("email", "test9@test.com")
 
     val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
     val taxCreditsUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
@@ -296,13 +307,31 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       Some(PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email))
     }
 
+    def preferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean, entityId: EntityId) = {
+      val email = if (genericPaperless | taxCreditsPaperless) Some(verifiedEmail) else None
+      List(PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email))
+    }
+
+    def multiplepreferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean, entityId: EntityId) = {
+      val email = if (genericPaperless | taxCreditsPaperless) Some(verifiedEmail) else None
+      List(PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email),
+        PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email))
+    }
+
     val optedInPreferenceDetails = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false)
     val optedOutPreferenceDetails = preferenceDetails(genericPaperless = false, taxCreditsPaperless = false)
+    val optedInPreferenceDetailsList = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false, entityId = EntityId(value="x123"))
+    val optedInPreferenceDetailsList2 = multiplepreferenceDetails(genericPaperless = true, taxCreditsPaperless = false, entityId = EntityId(value="x123"))
 
     val taxIdentifiers = Seq(validSaUtr, validNino)
 
     val optedInPreference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
       email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
+    val optedInPreferenceList = List(Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+      email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers),
+      Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+        email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers))
+
     val optedOutPreference = Preference(genericPaperless = false, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
       email = None, taxIdentifiers = taxIdentifiers)
 

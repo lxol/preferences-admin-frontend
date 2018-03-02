@@ -34,7 +34,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, preferencesConnector: PreferencesConnector, auditConnector: AuditConnector, appName: AppName) {
 
   def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
-    val preferences = if(taxId.name.contains("email")) getPreferences(taxId) else getPreference(taxId)
+    val preferences = if(taxId.name.equals("email")) getPreferences(taxId) else getPreference(taxId)
     preferences.map(preference => auditConnector.sendExtendedEvent(createSearchEvent(user.username, taxId, preference.headOption)))
     preferences
   }
