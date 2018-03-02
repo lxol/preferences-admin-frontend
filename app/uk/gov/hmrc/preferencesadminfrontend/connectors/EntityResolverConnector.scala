@@ -25,7 +25,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.play.config.inject.ServicesConfig
 import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, EntityId, TaxIdentifier}
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http._
@@ -35,7 +35,6 @@ import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.config.AppName
 
 import scala.util.Try
-
 
 @Singleton
 class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig, frontendAuditConnector: FrontendAuditConnector) extends HttpGet with WSGet
@@ -60,6 +59,20 @@ class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig, fr
       case ex: BadRequestException => Seq.empty
     }
   }
+
+  def getTaxIdentifiers(preferenceDetails: PreferenceDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
+      val response = GET[Option[Entity]](s"$serviceUrl/entity-resolver/${preferenceDetails.entityId.get}")
+      response.map(
+        _.fold(Seq.empty[TaxIdentifier])(entity =>
+          Seq(
+            entity.sautr.map(TaxIdentifier("sautr", _)),
+            entity.nino.map(TaxIdentifier("nino", _))
+          ).flatten)
+      ).recover {
+        case ex: BadRequestException => Seq.empty
+      }
+  }
+
 
   def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
     GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {
@@ -106,7 +119,7 @@ object Entity {
   val formats = Json.format[Entity]
 }
 
-case class PreferenceDetails(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean, taxCreditsUpdatedAt : Option[DateTime], email: Option[Email])
+case class PreferenceDetails(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean, taxCreditsUpdatedAt : Option[DateTime], email: Option[Email], entityId: Option[EntityId] = None)
 
 object PreferenceDetails {
   implicit val localDateRead: Reads[Option[DateTime]] = new Reads[Option[DateTime]] {
@@ -127,6 +140,7 @@ object PreferenceDetails {
     (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(None: Option[DateTime])(m => (m \ "updatedAt").asOpt[DateTime])) and
     (JsPath \ "termsAndConditions" \ "taxCredits").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
     (JsPath \ "termsAndConditions" \ "taxCredits").readNullable[JsValue].map(_.fold(None: Option[DateTime])(m => (m \ "updatedAt").asOpt[DateTime])) and
-      (JsPath \ "email").readNullable[Email]
-    ) ((genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email) => PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email))
+      (JsPath \ "email").readNullable[Email] and
+      (JsPath \ "entityId").readNullable[EntityId]
+    ) ((genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email, entityId) => PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email, entityId))
 }

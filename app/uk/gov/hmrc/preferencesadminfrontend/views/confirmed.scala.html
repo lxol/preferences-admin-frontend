@@ -14,7 +14,7 @@
  * limitations under the License.
  *@
 
-@(preference: uk.gov.hmrc.preferencesadminfrontend.services.model.Preference)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
+@(preference: List[uk.gov.hmrc.preferencesadminfrontend.services.model.Preference])(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
 
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
 

@@ -17,7 +17,7 @@
 @import uk.gov.hmrc.preferencesadminfrontend.controllers.model.OptOutReason
 @(reason: Form[OptOutReason],
   searchTaxIdentifier: uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier,
-  preference: uk.gov.hmrc.preferencesadminfrontend.services.model.Preference)(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
+  preferences: List[uk.gov.hmrc.preferencesadminfrontend.services.model.Preference])(implicit request: Request[_], messages: Messages, appConfig: uk.gov.hmrc.preferencesadminfrontend.config.AppConfig)
 
 @import uk.gov.hmrc.play.views.html.helpers._
 @import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
@@ -25,12 +25,13 @@
 @uk.gov.hmrc.preferencesadminfrontend.views.html.main_template(title = "User Summary", bodyClasses = None) {
 
     <h2>User Summary</h2>
+@uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(preferences)
 
-    @uk.gov.hmrc.preferencesadminfrontend.views.html.user_summary(preference)
+@if(preferences.size == 1){
 
+@for(preference <- preferences){
 
     <h2>Actions</h2>
-
 
     <div id="accordionId" data-accordion data-accordion-animate data-accordion-set-hash aria-expanded="false" class="accordion">
         <div class="accordion__row">
@@ -71,4 +72,6 @@
     <div style="margin-top: 200px;">
         <a class="back-link" href="/paperless/admin/search?taxIdentifierName=@{searchTaxIdentifier.name}&taxIdentifierValue=@{searchTaxIdentifier.value}">Back to search</a>
     </div>
+  }
+ }
 }

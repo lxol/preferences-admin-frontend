@@ -16,18 +16,27 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
-import play.api.libs.json.Json
+import java.util.UUID
+import play.api.libs.json._
 
-case class TaxIdentifier(name: String, value: String) {
-  val regime = name match {
-    case "sautr" => "sa"
-    case "nino"  => "paye"
-    case "email" => "email"
-    case _ => throw new RuntimeException("Invalid tax id name")
+case class EntityId(value: String) {
+  override def toString = value
+}
+
+object EntityId {
+
+  def generate(): EntityId = EntityId(UUID.randomUUID().toString)
+
+  private val read = new Reads[EntityId] {
+    override def reads(json: JsValue): JsResult[EntityId] = json match {
+      case JsString(s) => JsSuccess(EntityId(s))
+      case _           => JsError("No entityId")
+    }
   }
-}
 
-object TaxIdentifier {
-  implicit val format = Json.format[TaxIdentifier]
-}
+  private val write = new Writes[EntityId] {
+    override def writes(e: EntityId): JsValue = JsString(e.value)
+  }
 
+  implicit val formats : Format[EntityId] = Format(read, write)
+}

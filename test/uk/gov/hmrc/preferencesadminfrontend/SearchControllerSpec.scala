@@ -44,7 +44,6 @@ import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
 import scala.concurrent.Future
 import uk.gov.hmrc.http.HeaderCarrier
 
-
 class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with GuiceOneAppPerSuite {
   implicit val hc = HeaderCarrier()
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
@@ -70,6 +69,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
   "search(taxIdentifier)" should {
 
     val queryParamsForValidNino = "?name=nino&value=CE067583D"
+    val queryParamsForEmailid = "?name=email&value=test@test.com"
     val queryParamsForValidLowercaseNino = "?name=nino&value=ce067583d"
     val queryParamsForInvalidNino = "?name=nino&value=1234567"
     val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
@@ -80,7 +80,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
 
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true,  taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
-      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(List(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
@@ -90,12 +90,33 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       body should include ("15 February 2018 AM 12:0:0s")
     }
 
+    "return a preference if email address exists" in new TestCase {
+      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true,  taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+        Some(Email("test@test.com", verified = true, verifiedOn = verifiedOn)), Seq())
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(List(preference)))
+
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForEmailid).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.OK
+      val body: String = bodyOf(result).futureValue
+      body should include ("test@test.com")
+      body should include ("15 February 2018 AM 12:0:0s")
+    }
+
+    "return a not found error message if the preference associated with that emailid is not found" in new TestCase {
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Nil))
+      Mockito.reset(auditConnectorMock)
+      val result = searchController.search(addToken(FakeRequest("GET", queryParamsForEmailid).withSession(User.sessionKey -> "user")))
+
+      status(result) shouldBe Status.OK
+      bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
+    }
 
     "include a hidden form to opt the user out" in new TestCase {
 
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
-      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(List(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
@@ -107,7 +128,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     }
 
     "return a not found error message if the preference is not found" in new TestCase {
-      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(None))
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Nil))
       Mockito.reset(auditConnectorMock)
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
 
@@ -118,7 +139,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     "call the search service with an uppercase taxIdentifier if a lowercase taxIdentifier is provided through the Form" in new TestCase {
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
-      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Some(preference)))
+      when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(List(preference)))
 
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidLowercaseNino).withSession(User.sessionKey -> "user")))
 
@@ -131,7 +152,6 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
         "/paperless/admin/search/opt-out?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
     }
   }
-
 
   "submit opt out request" should {
     val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
@@ -154,7 +174,6 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
   }
 }
 
-
 trait TestCase extends MockitoSugar {
 
   implicit val appConfig = mock[FrontendAppConfig]
@@ -166,7 +185,6 @@ trait TestCase extends MockitoSugar {
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
   val searchServiceMock = mock[SearchService]
-
 
   def searchController()(implicit messages: MessagesApi) = new SearchController(auditConnectorMock, searchServiceMock)
 

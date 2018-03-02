@@ -25,26 +25,46 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.config.inject.AppName
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{EntityId, Preference, TaxIdentifier}
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, auditConnector: AuditConnector, appName: AppName) {
+class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, preferencesConnector: PreferencesConnector, auditConnector: AuditConnector, appName: AppName) {
 
-  def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
-    val preferenceOpt = getPreference(taxId)
-    preferenceOpt.foreach(preference => auditConnector.sendExtendedEvent(createSearchEvent(user.username, taxId, preference)))
-    preferenceOpt
+  def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
+    val preferences = if(taxId.name.equals("email")) getPreferences(taxId) else getPreference(taxId)
+    preferences.map(preference => auditConnector.sendExtendedEvent(createSearchEvent(user.username, taxId, preference.headOption)))
+    preferences
   }
 
+  def getPreferences(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
+    val preferences = for {
+      preferenceDetails <- preferencesConnector.getPreferenceDetails(taxId)
+    } yield {
+      preferenceDetails.map { details =>
+        val taxIdentifiers = entityResolverConnector.getTaxIdentifiers(details)
+        taxIdentifiers.map { taxIds =>
+          Preference(details.genericPaperless, details.genericUpdatedAt, details.taxCreditsPaperless, details.taxCreditsUpdatedAt, details.email, taxIds)
+        }
+      }
+    }
+    preferences.flatMap(Future.sequence(_)).recover{
+      case _ => Nil
+    }
+  }
 
-  def getPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Preference]] = {
-    for {
+  def getPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
+    val preferenceDetail = for {
       preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
-      taxIdentifiers <- entityResolverConnector.getTaxIdentifiers(taxId)
+      taxIdentifiers <-  entityResolverConnector.getTaxIdentifiers(taxId)
     } yield preferenceDetail.map(details => Preference(details.genericPaperless, details.genericUpdatedAt, details.taxCreditsPaperless, details.taxCreditsUpdatedAt, details.email, taxIdentifiers))
+
+    preferenceDetail map {
+       case Some(preference) => List(preference)
+       case None => Nil
+     }
   }
 
   def optOut(taxId: TaxIdentifier, reason: String)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[OptOutResult] = {
@@ -53,7 +73,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
       optoutResult <- entityResolverConnector.optOut(taxId)
       newPreference <- getPreference(taxId)
     } yield {
-      auditConnector.sendExtendedEvent(createOptOutEvent(user.username, taxId, originalPreference, newPreference, optoutResult, reason))
+      auditConnector.sendExtendedEvent(createOptOutEvent(user.username, taxId, originalPreference.headOption, newPreference.headOption, optoutResult, reason))
       optoutResult
     }
 
