@@ -49,10 +49,10 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
           errors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(errors))),
           searchTaxIdentifier => {
             searchService.searchPreference(searchTaxIdentifier).map {
-              case preferenceList =>
-                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(OptOutReason(), searchTaxIdentifier, preferenceList))
               case Nil =>
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
+              case preferenceList =>
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(OptOutReason(), searchTaxIdentifier, preferenceList))
             }
           }
         )
