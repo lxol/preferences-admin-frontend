@@ -75,7 +75,7 @@ class EntityResolverConnector @Inject()(serviceConfiguration: ServicesConfig, fr
 
 
   def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
-    GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {
+    GET[Option[PreferenceDetails]](s"$serviceUrl/preferences/entity/${taxId.regime}/${taxId.value}").recover {
       case ex: BadRequestException => None
     }
   }

@@ -90,7 +90,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     val verfiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
 
     "return generic paperless preference true and valid email address and verification true if user is opted in for saUtr" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val expectedPath = s"/preferences/entity/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseForGenericOptedIn(true)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
@@ -104,7 +104,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"/preferences/entity/paye/${nino.value}"
       val responseJson = preferenceDetailsResponseForTaxCreditsOptedIn(emailVerified = true)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
@@ -118,7 +118,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits and Generic" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"/preferences/entity/paye/${nino.value}"
       val responseJson = preferenceDetailsResponseForBothOptedIn(emailVerified = true)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
@@ -132,7 +132,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return generic paperless preference true and valid email address and verification false if user is opted in for saUtr" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val expectedPath = s"/preferences/entity/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseForGenericOptedIn(false)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
@@ -144,7 +144,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return generic paperless preference false and email as 'None' if user is opted out for saUtr" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val expectedPath = s"/preferences/entity/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseForOptedOut()
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
@@ -156,7 +156,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return email address and verification if user is opted in for nino" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"/preferences/entity/paye/${nino.value}"
       val responseJson = preferenceDetailsResponseForGenericOptedIn(true)
 
       val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
@@ -170,7 +170,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return None if taxId does not exist" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val expectedPath = s"/preferences/entity/sa/${sautr.value}"
 
       val result = entityConnectorGetMock(expectedPath, emptyJson, Status.NOT_FOUND).getPreferenceDetails(sautr).futureValue
 
@@ -178,7 +178,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return None if taxId is malformed" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"/preferences/entity/paye/${nino.value}"
       val error = new BadRequestException(message =s"""'{"statusCode":400,"message":"Cannot parse parameter '${nino.name}' with value '${nino.value}'"}'""")
 
       val result = entityConnectorGetMock(expectedPath, error).getPreferenceDetails(nino).futureValue
