@@ -54,7 +54,8 @@
 
                 <p class="font-xsmall">Are you sure you wish to opt this user out?</p>
 
-                @form(action = routes.SearchController.optOut(searchTaxIdentifier.name, searchTaxIdentifier.value)) {
+                @form(action = routes.SearchController.optOut(preference.taxIdentifiers.last.name,
+                                                              preference.taxIdentifiers.last.value)) {
                     @textArea(reason("reason"),
                         '_label -> "Please provide reason",
                         '_divClass -> "form-field font-xsmall",
