@@ -192,13 +192,13 @@ trait TestCase extends MockitoSugar {
     new ArgumentMatcher[MergedDataEvent]() {
       def matches(t: MergedDataEvent): Boolean = {
         t.auditSource == expected.auditSource &&
-          t.auditType == expected.auditType &&
-          t.request.tags == expected.request.tags &&
-          t.request.detail == expected.request.detail &&
-          t.request.generatedAt == expected.request.generatedAt &&
-          t.response.tags == expected.response.tags &&
-          t.response.detail == expected.response.detail &&
-          t.response.generatedAt == expected.response.generatedAt
+        t.auditType == expected.auditType &&
+        t.request.tags == expected.request.tags &&
+        t.request.detail == expected.request.detail &&
+        t.request.generatedAt == expected.request.generatedAt &&
+        t.response.tags == expected.response.tags &&
+        t.response.detail == expected.response.detail &&
+        t.response.generatedAt == expected.response.generatedAt
       }
     }
   }

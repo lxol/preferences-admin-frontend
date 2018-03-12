@@ -318,7 +318,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
           t.auditSource == expected.auditSource &&
           t.auditType == expected.auditType &&
           t.request.tags == expected.request.tags &&
-         t.request.detail == expected.request.detail &&
+          t.request.detail == expected.request.detail &&
           t.response.tags == expected.response.tags &&
           t.response.detail == expected.response.detail
         }
