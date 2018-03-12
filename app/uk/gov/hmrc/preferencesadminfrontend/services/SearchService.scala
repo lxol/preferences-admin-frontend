@@ -17,15 +17,14 @@
 package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
-
-import akka.actor.FSM.Reason
+import org.joda.time.DateTime
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
+import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent}
 import uk.gov.hmrc.play.config.inject.AppName
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{EntityId, Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -35,7 +34,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
 
   def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
     val preferences = if(taxId.name.equals("email")) getPreferences(taxId) else getPreference(taxId)
-    preferences.map(preference => auditConnector.sendExtendedEvent(createSearchEvent(user.username, taxId, preference.headOption)))
+    preferences.map(preference => auditConnector.sendMergedEvent(createSearchEvent(user.username, taxId, preference.headOption)))
     preferences
   }
 
@@ -73,48 +72,67 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
       optoutResult <- entityResolverConnector.optOut(taxId)
       newPreference <- getPreference(taxId)
     } yield {
-      auditConnector.sendExtendedEvent(createOptOutEvent(user.username, taxId, originalPreference.headOption, newPreference.headOption, optoutResult, reason))
+      auditConnector.sendMergedEvent(createOptOutEvent(user.username, taxId, originalPreference.headOption, newPreference.headOption, optoutResult, reason))
       optoutResult
     }
 
   }
 
-  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, originalPreference: Option[Preference], newPreference: Option[Preference], optOutResult: OptOutResult, reason: String): ExtendedDataEvent = {
+  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, originalPreference: Option[Preference], newPreference: Option[Preference], optOutResult: OptOutResult, reason: String): MergedDataEvent = {
+
     val reasonOfFailureJson = optOutResult match {
-      case OptedOut => Json.obj()
-      case AlreadyOptedOut => Json.obj("reasonOfFailure" -> "Preference already opted out")
-      case PreferenceNotFound => Json.obj("reasonOfFailure" -> "Preference not found")
+      case OptedOut => "Done"
+      case AlreadyOptedOut => "Preference already opted out"
+      case PreferenceNotFound => "Preference not found"
     }
 
-    val details = Json.obj(
+    val details: Map[String, String] = Map(
       "user" -> username,
-      "query" -> Json.toJson(taxIdentifier),
-      "optOutReason" -> reason
-    ) ++
-      originalPreference.fold(Json.obj())(p => Json.obj("originalPreference" -> Json.toJson(p))) ++
-      newPreference.fold(Json.obj())(p => Json.obj("newPreference" -> Json.toJson(p))) ++
-      reasonOfFailureJson
+      "query" -> Json.toJson(taxIdentifier).toString,
+      "optOutReason" -> reason,
+      "originalPreference" -> originalPreference.fold("Not found")(p => Json.toJson(p).toString),
+      "newPreference" -> newPreference.fold("Not found")(p => Json.toJson(p).toString),
+      "reasonOfFailure" -> reasonOfFailureJson
+    )
 
-    ExtendedDataEvent(
+    MergedDataEvent(
       auditSource = appName.appName,
       auditType = if (optOutResult == OptedOut) "TxSucceeded" else "TxFailed",
-      detail = details,
-      tags = Map("transactionName" -> "Manual opt out from paperless")
+      request = DataCall(
+        tags = Map("transactionName" -> "Manual opt out from paperless"),
+        detail = details + ("DataCallType" -> "request"),
+        generatedAt = DateTime.now()
+      ),
+      response = DataCall(
+        tags = Map("transactionName" -> "Manual opt out from paperless"),
+        detail = details + ("DataCallType" -> "response"),
+        generatedAt = DateTime.now()
+      )
     )
   }
 
-  def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, preference: Option[Preference]): ExtendedDataEvent = {
-    val details = Json.obj(
-      "user" -> username,
-      "query" -> Json.toJson(taxIdentifier),
-      "result" -> preference.fold("Not found")(_ => "Found")
-    ) ++ preference.fold(Json.obj())(p => Json.obj("preference" -> Json.toJson(p)))
+  def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, preference: Option[Preference]): MergedDataEvent = {
 
-    ExtendedDataEvent(
+    val details: Map[String, String] = Map(
+      "user" -> username,
+      "query" -> Json.toJson(taxIdentifier).toString,
+      "result" -> preference.fold("Not found")(_ => "Found"),
+      "preference" -> preference.fold("Not found")(p => Json.toJson(p).toString)
+    )
+
+    MergedDataEvent(
       auditSource = appName.appName,
       auditType = "TxSucceeded",
-      detail = details,
-      tags = Map("transactionName" -> "Paperless opt out search")
+      request = DataCall(
+        tags = Map("transactionName" -> "Paperless opt out search"),
+        detail = details + ("DataCallType" -> "request"),
+        generatedAt = DateTime.now()
+      ),
+      response = DataCall(
+        tags = Map("transactionName" -> "Paperless opt out search"),
+        detail = details + ("DataCallType" -> "response"),
+        generatedAt = DateTime.now()
+      )
     )
   }
 }

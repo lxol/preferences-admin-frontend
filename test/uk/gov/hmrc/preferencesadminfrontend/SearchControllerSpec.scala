@@ -31,7 +31,7 @@ import play.api.i18n.MessagesApi
 import play.api.test.Helpers.{headers, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
+import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.OptedOut
@@ -188,13 +188,17 @@ trait TestCase extends MockitoSugar {
 
   def searchController()(implicit messages: MessagesApi) = new SearchController(auditConnectorMock, searchServiceMock)
 
-  def isSimilar(expected: ExtendedDataEvent): ArgumentMatcher[ExtendedDataEvent] = {
-    new ArgumentMatcher[ExtendedDataEvent]() {
-      def matches(t: ExtendedDataEvent): Boolean = {
+  def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
+    new ArgumentMatcher[MergedDataEvent]() {
+      def matches(t: MergedDataEvent): Boolean = {
         t.auditSource == expected.auditSource &&
         t.auditType == expected.auditType &&
-        t.detail == expected.detail &&
-        t.tags == expected.tags
+        t.request.tags == expected.request.tags &&
+        t.request.detail == expected.request.detail &&
+        t.request.generatedAt == expected.request.generatedAt &&
+        t.response.tags == expected.response.tags &&
+        t.response.detail == expected.response.detail &&
+        t.response.generatedAt == expected.response.generatedAt
       }
     }
   }

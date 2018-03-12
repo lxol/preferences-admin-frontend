@@ -25,7 +25,7 @@ import org.scalatest.mockito.MockitoSugar
 import play.api.Configuration
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
+import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent}
 import uk.gov.hmrc.play.config.inject.AppName
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
@@ -50,7 +50,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       searchService.searchPreference(validNino).futureValue shouldBe List(optedInPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validNino, Some(optedInPreference))
-      verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return preference for utr user when it exists" in new TestCase {
@@ -60,7 +60,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       searchService.searchPreference(validSaUtr).futureValue shouldBe List(optedInPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedInPreference))
-      verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return preference for utr user who has opted out" in new TestCase {
@@ -70,7 +70,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       searchService.searchPreference(validSaUtr).futureValue shouldBe List(optedOutPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedOutPreference))
-      verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return None if the saUtr identifier does not exist" in new TestCase {
@@ -82,7 +82,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       searchService.searchPreference(validSaUtr).futureValue shouldBe Nil
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, None)
-      verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "return preference for email address user when it exists" in new TestCase {
@@ -128,7 +128,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       searchService.optOut(validSaUtr,"my optOut reason").futureValue shouldBe OptedOut
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut, "my optOut reason")
-      verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "create an audit event when the user is not opted out as it is not found" in new TestCase {
@@ -140,7 +140,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe PreferenceNotFound
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound, "my optOut reason")
-      verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
     "create an audit event when the user is already opted out" in new TestCase {
@@ -152,7 +152,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe AlreadyOptedOut
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut, "my optOut reason")
-      verify(auditConnector).sendExtendedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
   }
 
@@ -164,20 +164,12 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> "sautr", "value" -> "123"),
-        "result" -> "Found",
-        "preference" -> Json.obj(
-          "genericPaperless" -> true,
-          "genericUpdatedAt" -> 1518652800000L,
-          "taxCreditsPaperless" -> true,
-          "taxCreditsUpdatedAt" -> 1518652800000L,
-          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true, "verifiedOn" -> 1518652800000L),
-          "taxIdentifiers" -> Json.arr(Json.obj("name" -> "sautr", "value" -> "123"), Json.obj("name" -> "nino", "value" -> "ABC"))
-        )
-      )
-      event.tags("transactionName") shouldBe "Paperless opt out search"
+      event.request.detail shouldBe Map("preference" -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":true,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123\"},{\"name\":\"nino\",\"value\":\"ABC\"}]}",
+                                        "result" -> "Found",
+                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123\"}",
+                                        "DataCallType" -> "request",
+                                        "user" -> "me")
+      event.request.tags("transactionName") shouldBe "Paperless opt out search"
     }
 
     "generate the correct event when the preference does not exist" in new TestCase {
@@ -185,12 +177,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> "sautr", "value" -> "123"),
-        "result" -> "Not found"
-      )
-      event.tags("transactionName") shouldBe "Paperless opt out search"
+      event.request.detail shouldBe Map("preference" -> "Not found", "result" -> "Not found", "query" -> "{\"name\":\"sautr\",\"value\":\"123\"}", "DataCallType" -> "request", "user" -> "me")
+      event.request.tags("transactionName") shouldBe "Paperless opt out search"
 
     }
   }
@@ -202,27 +190,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
-        "optOutReason" -> "my optOut reason",
-        "originalPreference" -> Json.obj(
-          "genericPaperless" -> true,
-          "genericUpdatedAt" -> 1518652800000L,
-          "taxCreditsPaperless" -> false,
-          "taxCreditsUpdatedAt" -> 1518652800000L,
-          "email" -> Json.obj("address" -> "john.doe@digital.hmrc.gov.uk", "verified" -> true, "verifiedOn" -> 1518652800000L),
-          "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
-        ),
-        "newPreference" -> Json.obj(
-          "genericPaperless" -> false,
-          "genericUpdatedAt" -> 1518652800000L,
-          "taxCreditsPaperless" -> false,
-          "taxCreditsUpdatedAt" -> 1518652800000L,
-          "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
-        )
-      )
-      event.tags("transactionName") shouldBe "Manual opt out from paperless"
+      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
+                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+                                        "originalPreference" -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+                                        "DataCallType" -> "request",
+                                        "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+                                        "reasonOfFailure" -> "Done",
+                                        "user" -> "me")
+      event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
     }
 
     "generate the correct event when the preference already opted out" in new TestCase {
@@ -230,27 +205,14 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
-        "optOutReason" -> "my optOut reason",
-        "originalPreference" -> Json.obj(
-          "genericPaperless" -> false,
-          "genericUpdatedAt" -> 1518652800000L,
-          "taxCreditsPaperless" -> false,
-          "taxCreditsUpdatedAt" -> 1518652800000L,
-          "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
-        ),
-        "newPreference" -> Json.obj(
-          "genericPaperless" -> false,
-          "genericUpdatedAt" -> 1518652800000L,
-          "taxCreditsPaperless" -> false,
-          "taxCreditsUpdatedAt" -> 1518652800000L,
-          "taxIdentifiers" -> Json.arr(Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value), Json.obj("name" -> validNino.name, "value" -> validNino.value))
-        ),
-        "reasonOfFailure" -> "Preference already opted out"
-      )
-      event.tags("transactionName") shouldBe "Manual opt out from paperless"
+      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
+                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+                                         "originalPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+                                         "DataCallType" -> "request",
+                                         "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+                                         "reasonOfFailure" -> "Preference already opted out",
+                                         "user" -> "me")
+      event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
 
     }
 
@@ -259,13 +221,9 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
-        "optOutReason" -> "my optOut reason",
-        "reasonOfFailure" -> "Preference not found"
-      )
-      event.tags("transactionName") shouldBe "Manual opt out from paperless"
+      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
+                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}", "originalPreference" -> "Not found", "DataCallType" -> "request", "newPreference" -> "Not found", "reasonOfFailure" -> "Preference not found", "user" -> "me")
+      event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
 
     }
 
@@ -274,14 +232,23 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
-      event.detail shouldBe Json.obj(
-        "user" -> "me",
-        "query" -> Json.obj("name" -> validSaUtr.name, "value" -> validSaUtr.value),
-        "optOutReason" -> "my optOut reason",
-        "reasonOfFailure" -> "Preference not found"
-      )
-      event.tags("transactionName") shouldBe "Manual opt out from paperless"
+      event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
+      event.request.detail shouldBe  Map("optOutReason" -> "my optOut reason",
+                                         "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+                                         "originalPreference" -> "Not found",
+                                         "DataCallType" -> "request",
+                                         "newPreference" -> "Not found",
+                                         "reasonOfFailure" -> "Preference not found",
+                                         "user" -> "me")
 
+      event.response.tags("transactionName") shouldBe "Manual opt out from paperless"
+      event.response.detail shouldBe Map("optOutReason" -> "my optOut reason",
+                                         "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+                                         "originalPreference" -> "Not found",
+                                         "DataCallType" -> "response",
+                                         "newPreference" -> "Not found",
+                                         "reasonOfFailure" -> "Preference not found",
+                                         "user" -> "me")
     }
 
   }
@@ -320,8 +287,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
     val optedInPreferenceDetails = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false)
     val optedOutPreferenceDetails = preferenceDetails(genericPaperless = false, taxCreditsPaperless = false)
-    val optedInPreferenceDetailsList = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false, entityId = EntityId(value="x123"))
-    val optedInPreferenceDetailsList2 = multiplepreferenceDetails(genericPaperless = true, taxCreditsPaperless = false, entityId = EntityId(value="x123"))
+    val optedInPreferenceDetailsList = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false, entityId = EntityId(value = "x123"))
+    val optedInPreferenceDetailsList2 = multiplepreferenceDetails(genericPaperless = true, taxCreditsPaperless = false, entityId = EntityId(value = "x123"))
 
     val taxIdentifiers = Seq(validSaUtr, validNino)
 
@@ -340,17 +307,20 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     val preferencesConnector = mock[PreferencesConnector]
     val appName = new AppName {
       protected def appNameConfiguration: Configuration = ???
+
       override def appName: String = "preferences-admin-frontend"
     }
     val searchService = new SearchService(entityResolverConnector, preferencesConnector, auditConnector, appName)
 
-    def isSimilar(expected: ExtendedDataEvent): ArgumentMatcher[ExtendedDataEvent] = {
-      new ArgumentMatcher[ExtendedDataEvent]() {
-        def matches(t: ExtendedDataEvent): Boolean = {
+    def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
+      new ArgumentMatcher[MergedDataEvent]() {
+        def matches(t: MergedDataEvent): Boolean = {
           t.auditSource == expected.auditSource &&
-            t.auditType == expected.auditType &&
-            t.detail == expected.detail &&
-            t.tags == expected.tags
+          t.auditType == expected.auditType &&
+          t.request.tags == expected.request.tags &&
+          t.request.detail == expected.request.detail &&
+          t.response.tags == expected.response.tags &&
+          t.response.detail == expected.response.detail
         }
       }
     }
