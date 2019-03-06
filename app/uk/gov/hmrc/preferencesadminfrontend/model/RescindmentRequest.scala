@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend.config.filters
+package uk.gov.hmrc.preferencesadminfrontend.model
 
-import javax.inject.Singleton
+import org.joda.time.LocalDate
+import play.api.libs.json.Json
+import uk.gov.hmrc.http.controllers.RestFormats
 
-import com.google.inject.Inject
-import play.api.http.DefaultHttpFilters
-import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
+case class RescindmentRequest(batchId: String, formId: String, date: String, reference: String, emailTemplateId: String)
 
-@Singleton
-class MicroserviceFilters @Inject()(frontendFilters: FrontendFilters) extends DefaultHttpFilters(frontendFilters.frontendFilters:_*)
+object RescindmentRequest extends RestFormats {
+  implicit val writes = Json.writes[RescindmentRequest]
+}

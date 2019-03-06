@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend.config.filters
+package uk.gov.hmrc.preferencesadminfrontend.model
 
-import javax.inject.Singleton
+import play.api.libs.json.{Reads, __}
+import play.api.libs.functional.syntax._
 
-import com.google.inject.Inject
-import play.api.http.DefaultHttpFilters
-import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
+case class RescindmentAlertsResult(sent: Int, requeued: Int, failed: Int, hardCopyRequested: Int)
 
-@Singleton
-class MicroserviceFilters @Inject()(frontendFilters: FrontendFilters) extends DefaultHttpFilters(frontendFilters.frontendFilters:_*)
+object RescindmentAlertsResult {
+  implicit val reads: Reads[RescindmentAlertsResult] = (
+    (__ \ "alerts sent").read[Int] and
+      (__ \ "ready for retrial").read[Int] and
+      (__ \ "failed permanently").read[Int] and
+      (__ \ "hard copy requested").read[Int]
+    )(RescindmentAlertsResult.apply _)
+}

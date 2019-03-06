@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend.config.filters
+package uk.gov.hmrc.preferencesadminfrontend.model
 
-import javax.inject.Singleton
+import play.api.libs.json.Json
+import uk.gov.hmrc.http.controllers.RestFormats
 
-import com.google.inject.Inject
-import play.api.http.DefaultHttpFilters
-import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
+case class RescindmentUpdateResult(tried: Int, succeeded: Int, alreadyUpdated: Int, invalidState: Int)
 
-@Singleton
-class MicroserviceFilters @Inject()(frontendFilters: FrontendFilters) extends DefaultHttpFilters(frontendFilters.frontendFilters:_*)
+object RescindmentUpdateResult extends RestFormats {
+  implicit val format = Json.format[RescindmentUpdateResult]
+}

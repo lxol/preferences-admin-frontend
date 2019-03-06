@@ -16,16 +16,21 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
+import org.joda.time.LocalDate
 import play.api.data.Form
 import play.api.data.Forms.{mapping, nonEmptyText}
+import uk.gov.hmrc.preferencesadminfrontend.model.RescindmentRequest
 
+object Rescindment {
 
-case class OptOutReason(reason : String)
-
-object OptOutReason {
-  def apply() : Form[OptOutReason] = Form[OptOutReason](
+  def apply() = Form[RescindmentRequest](
     mapping(
-      "reason" -> nonEmptyText
-    )(OptOutReason.apply)(OptOutReason.unapply))
-
+      "batchId" -> nonEmptyText,
+      "formId" -> nonEmptyText,
+      "date" -> nonEmptyText,
+      "reference" -> nonEmptyText,
+      "emailTemplateId" -> nonEmptyText
+    )((batchId, formId, date, reference, emailTemplateId) =>
+      RescindmentRequest.apply(batchId, formId, date, reference, emailTemplateId))(RescindmentRequest.unapply _)
+  )
 }
