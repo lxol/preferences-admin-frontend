@@ -17,9 +17,9 @@
 package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.inject.AppName
+import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
