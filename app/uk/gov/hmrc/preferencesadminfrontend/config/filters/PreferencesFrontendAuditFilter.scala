@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 import akka.stream.Materializer
 import play.api.Configuration
-import uk.gov.hmrc.play.config.inject.{AppName, RunMode}
+import uk.gov.hmrc.play.config.{AppName, RunMode}
 import uk.gov.hmrc.play.frontend.filters.FrontendAuditFilter
 import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 

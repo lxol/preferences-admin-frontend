@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import javax.inject.Inject
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
 import com.codahale.metrics.{MetricFilter, SharedMetricRegistries}
 import play.api.{Configuration, Logger}
-import uk.gov.hmrc.play.config.inject.RunMode
+import uk.gov.hmrc.play.config.RunMode
 
 class GraphiteConfiguration @Inject()(configuration: Configuration, runMode: RunMode) {
 

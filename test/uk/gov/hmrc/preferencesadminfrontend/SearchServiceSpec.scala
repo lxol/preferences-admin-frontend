@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import play.api.Configuration
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent}
-import uk.gov.hmrc.play.config.inject.AppName
+import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
@@ -36,6 +36,7 @@ import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, EntityId, Pre
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures with IntegrationPatience {
 
@@ -43,65 +44,65 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
   "getPreferences" should {
 
-    "return preference for nino user when it exists" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validNino)).thenReturn(Future.successful(optedInPreferenceDetails))
-      when(entityResolverConnector.getTaxIdentifiers(validNino)).thenReturn(Future.successful(taxIdentifiers))
+    "return preference for nino user when it exists" in new SearchServiceTestCase {
+      when(entityResolverConnectorMock.getPreferenceDetails(validNino)).thenReturn(Future.successful(optedInPreferenceDetails))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validNino)).thenReturn(Future.successful(taxIdentifiers))
 
       searchService.searchPreference(validNino).futureValue shouldBe List(optedInPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validNino, Some(optedInPreference))
-      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
-    "return preference for utr user when it exists" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
+    "return preference for utr user when it exists" in new SearchServiceTestCase {
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
       searchService.searchPreference(validSaUtr).futureValue shouldBe List(optedInPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedInPreference))
-      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
-    "return preference for utr user who has opted out" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
+    "return preference for utr user who has opted out" in new SearchServiceTestCase {
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
       searchService.searchPreference(validSaUtr).futureValue shouldBe List(optedOutPreference)
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, Some(optedOutPreference))
-      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
-    "return None if the saUtr identifier does not exist" in new TestCase {
+    "return None if the saUtr identifier does not exist" in new SearchServiceTestCase {
       val preferenceDetails = None
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(preferenceDetails))
       override val taxIdentifiers = Seq()
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
 
       searchService.searchPreference(validSaUtr).futureValue shouldBe Nil
 
       val expectedAuditEvent = searchService.createSearchEvent("me", validSaUtr, None)
-      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
-    "return preference for email address user when it exists" in new TestCase {
-      when(preferencesConnector.getPreferenceDetails(validEmailid)).thenReturn(Future.successful(optedInPreferenceDetailsList))
-      when(entityResolverConnector.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
+    "return preference for email address user when it exists" in new SearchServiceTestCase {
+      when(preferencesConnectorMock.getPreferenceDetails(validEmailid)).thenReturn(Future.successful(optedInPreferenceDetailsList))
+      when(entityResolverConnectorMock.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
 
       searchService.searchPreference(validEmailid).futureValue shouldBe List(optedInPreference)
     }
 
-    "return None if that nino does not exist" in new TestCase {
-      when(preferencesConnector.getPreferenceDetails(unknownEmailid)).thenReturn(Future.successful(Nil))
-      when(entityResolverConnector.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
+    "return None if that nino does not exist" in new SearchServiceTestCase {
+      when(preferencesConnectorMock.getPreferenceDetails(unknownEmailid)).thenReturn(Future.successful(Nil))
+      when(entityResolverConnectorMock.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
 
       searchService.searchPreference(unknownEmailid).futureValue shouldBe Nil
     }
 
-    "return multiple preferences for email address user when it exists" in new TestCase {
-      when(preferencesConnector.getPreferenceDetails(validEmailid)).thenReturn(Future.successful(optedInPreferenceDetailsList2))
-      when(entityResolverConnector.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
+    "return multiple preferences for email address user when it exists" in new SearchServiceTestCase {
+      when(preferencesConnectorMock.getPreferenceDetails(validEmailid)).thenReturn(Future.successful(optedInPreferenceDetailsList2))
+      when(entityResolverConnectorMock.getTaxIdentifiers(optedInPreferenceDetailsList.head)).thenReturn(Future.successful(taxIdentifiers))
 
       searchService.searchPreference(validEmailid).futureValue shouldBe optedInPreferenceList
     }
@@ -110,69 +111,69 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
   "optOut" should {
 
-    "call entity resolver to opt the user out" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
-      when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
+    "call entity resolver to opt the user out" in new SearchServiceTestCase {
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
+      when(entityResolverConnectorMock.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
 
       searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe OptedOut
-      verify(entityResolverConnector, times(1)).optOut(validSaUtr)
+      verify(entityResolverConnectorMock, times(1)).optOut(validSaUtr)
     }
 
-    "create an audit event when the user is opted out" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
-      when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
-      when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
+    "create an audit event when the user is opted out" in new SearchServiceTestCase {
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
+      when(entityResolverConnectorMock.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
+      when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
-      searchService.optOut(validSaUtr,"my optOut reason").futureValue shouldBe OptedOut
+      searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe OptedOut
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut, "my optOut reason")
-      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
-    "create an audit event when the user is not opted out as it is not found" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(None), Future.successful(None))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(Seq.empty))
-      when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(PreferenceNotFound))
-      when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
+    "create an audit event when the user is not opted out as it is not found" in new SearchServiceTestCase {
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(None), Future.successful(None))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(Seq.empty))
+      when(entityResolverConnectorMock.optOut(validSaUtr)).thenReturn(Future.successful(PreferenceNotFound))
+      when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
       searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe PreferenceNotFound
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound, "my optOut reason")
-      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
-    "create an audit event when the user is already opted out" in new TestCase {
-      when(entityResolverConnector.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails), Future.successful(optedOutPreferenceDetails))
-      when(entityResolverConnector.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
-      when(entityResolverConnector.optOut(validSaUtr)).thenReturn(Future.successful(AlreadyOptedOut))
-      when(auditConnector.sendEvent(any())(any(),any())).thenReturn(Future.successful(AuditResult.Success))
+    "create an audit event when the user is already opted out" in new SearchServiceTestCase {
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails), Future.successful(optedOutPreferenceDetails))
+      when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
+      when(entityResolverConnectorMock.optOut(validSaUtr)).thenReturn(Future.successful(AlreadyOptedOut))
+      when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
       searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe AlreadyOptedOut
 
       val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut, "my optOut reason")
-      verify(auditConnector).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
+      verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
   }
 
   "createSearchEvent" should {
-    "generate the correct event when the preference exists" in new TestCase {
+    "generate the correct event when the preference exists" in new SearchServiceTestCase {
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
-        email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"),TaxIdentifier("nino", "ABC")))
+        email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"), TaxIdentifier("nino", "ABC")))
       val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), Some(preference))
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
       event.request.detail shouldBe Map("preference" -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":true,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123\"},{\"name\":\"nino\",\"value\":\"ABC\"}]}",
-                                        "result" -> "Found",
-                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123\"}",
-                                        "DataCallType" -> "request",
-                                        "user" -> "me")
+        "result" -> "Found",
+        "query" -> "{\"name\":\"sautr\",\"value\":\"123\"}",
+        "DataCallType" -> "request",
+        "user" -> "me")
       event.request.tags("transactionName") shouldBe "Paperless opt out search"
     }
 
-    "generate the correct event when the preference does not exist" in new TestCase {
+    "generate the correct event when the preference does not exist" in new SearchServiceTestCase {
       val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), None)
 
       event.auditSource shouldBe "preferences-admin-frontend"
@@ -185,77 +186,75 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
   "createOptoutEvent" should {
 
-    "generate the correct event user is opted out" in new TestCase {
+    "generate the correct event user is opted out" in new SearchServiceTestCase {
       val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
       event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
-                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
-                                        "originalPreference" -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-                                        "DataCallType" -> "request",
-                                        "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-                                        "reasonOfFailure" -> "Done",
-                                        "user" -> "me")
+        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+        "originalPreference" -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+        "DataCallType" -> "request",
+        "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+        "reasonOfFailure" -> "Done",
+        "user" -> "me")
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
     }
 
-    "generate the correct event when the preference already opted out" in new TestCase {
+    "generate the correct event when the preference already opted out" in new SearchServiceTestCase {
       val event = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
       event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
-                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
-                                         "originalPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-                                         "DataCallType" -> "request",
-                                         "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-                                         "reasonOfFailure" -> "Preference already opted out",
-                                         "user" -> "me")
+        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+        "originalPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+        "DataCallType" -> "request",
+        "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+        "reasonOfFailure" -> "Preference already opted out",
+        "user" -> "me")
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
 
     }
 
-    "generate the correct event when the preference does not exist" in new TestCase {
+    "generate the correct event when the preference does not exist" in new SearchServiceTestCase {
       val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
       event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
-                                        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}", "originalPreference" -> "Not found", "DataCallType" -> "request", "newPreference" -> "Not found", "reasonOfFailure" -> "Preference not found", "user" -> "me")
+        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}", "originalPreference" -> "Not found", "DataCallType" -> "request", "newPreference" -> "Not found", "reasonOfFailure" -> "Preference not found", "user" -> "me")
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
 
     }
 
-    "generate the correct event when entity is not found" in new TestCase {
+    "generate the correct event when entity is not found" in new SearchServiceTestCase {
       val event = searchService.createOptOutEvent("me", validSaUtr, None, None, PreferenceNotFound, "my optOut reason")
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
-      event.request.detail shouldBe  Map("optOutReason" -> "my optOut reason",
-                                         "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
-                                         "originalPreference" -> "Not found",
-                                         "DataCallType" -> "request",
-                                         "newPreference" -> "Not found",
-                                         "reasonOfFailure" -> "Preference not found",
-                                         "user" -> "me")
+      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
+        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+        "originalPreference" -> "Not found",
+        "DataCallType" -> "request",
+        "newPreference" -> "Not found",
+        "reasonOfFailure" -> "Preference not found",
+        "user" -> "me")
 
       event.response.tags("transactionName") shouldBe "Manual opt out from paperless"
       event.response.detail shouldBe Map("optOutReason" -> "my optOut reason",
-                                         "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
-                                         "originalPreference" -> "Not found",
-                                         "DataCallType" -> "response",
-                                         "newPreference" -> "Not found",
-                                         "reasonOfFailure" -> "Preference not found",
-                                         "user" -> "me")
+        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+        "originalPreference" -> "Not found",
+        "DataCallType" -> "response",
+        "newPreference" -> "Not found",
+        "reasonOfFailure" -> "Preference not found",
+        "user" -> "me")
     }
 
   }
 
-  trait TestCase {
-
-    implicit val user = User("me", "mySecretPassword")
+  trait SearchServiceTestCase extends SpecBase {
 
     val validSaUtr = TaxIdentifier("sautr", "123456789")
     val validNino = TaxIdentifier("nino", "CE067583D")
@@ -302,27 +301,7 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     val optedOutPreference = Preference(genericPaperless = false, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
       email = None, taxIdentifiers = taxIdentifiers)
 
-    val auditConnector = mock[AuditConnector]
-    val entityResolverConnector = mock[EntityResolverConnector]
-    val preferencesConnector = mock[PreferencesConnector]
-    val appName = new AppName {
-      protected def appNameConfiguration: Configuration = ???
-
-      override def appName: String = "preferences-admin-frontend"
-    }
-    val searchService = new SearchService(entityResolverConnector, preferencesConnector, auditConnector, appName)
-
-    def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
-      new ArgumentMatcher[MergedDataEvent]() {
-        def matches(t: MergedDataEvent): Boolean = {
-          t.auditSource == expected.auditSource &&
-          t.auditType == expected.auditType &&
-          t.request.tags == expected.request.tags &&
-          t.request.detail == expected.request.detail &&
-          t.response.tags == expected.response.tags &&
-          t.response.detail == expected.response.detail
-        }
-      }
-    }
+    val searchService = new SearchService(entityResolverConnectorMock, preferencesConnectorMock, auditConnectorMock, appName)
   }
+
 }

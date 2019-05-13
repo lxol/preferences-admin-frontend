@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, Preference, TaxIdentifier}
-import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
+import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
 
 import scala.concurrent.Future
 import uk.gov.hmrc.http.HeaderCarrier
@@ -52,13 +52,13 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
 
   "showSearchPage" should {
 
-    "return ok if session is authorised" in new TestCase {
+    "return ok if session is authorised" in new SearchControllerTestCase {
       val result = searchController.showSearchPage("","")(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
 
       status(result) shouldBe Status.OK
     }
 
-    "redirect to login page if not authorised" in new TestCase {
+    "redirect to login page if not authorised" in new SearchControllerTestCase {
       val result = searchController.showSearchPage("","")(addToken(FakeRequest().withSession()))
 
       status(result) shouldBe Status.SEE_OTHER
@@ -76,7 +76,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     val taxCreditsUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
     val verifiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
 
-    "return a preference if tax identifier exists" in new TestCase {
+    "return a preference if tax identifier exists" in new SearchControllerTestCase {
 
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true,  taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq(TaxIdentifier("email", "john.doe@digital.hmrc.gov.uk")))
@@ -90,7 +90,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       body should include ("15 February 2018 AM 12:0:0s")
     }
 
-    "return a preference if email address exists" in new TestCase {
+    "return a preference if email address exists" in new SearchControllerTestCase {
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true,  taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("test@test.com", verified = true, verifiedOn = verifiedOn)), Seq(TaxIdentifier("email","test@test.com")))
       when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(List(preference)))
@@ -103,7 +103,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       body should include ("15 February 2018 AM 12:0:0s")
     }
 
-    "return a not found error message if the preference associated with that emailid is not found" in new TestCase {
+    "return a not found error message if the preference associated with that emailid is not found" in new SearchControllerTestCase {
       when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Nil))
       Mockito.reset(auditConnectorMock)
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForEmailid).withSession(User.sessionKey -> "user")))
@@ -112,7 +112,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
     }
 
-    "include a hidden form to opt the user out" in new TestCase {
+    "include a hidden form to opt the user out" in new SearchControllerTestCase {
 
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq(TaxIdentifier("nino","CE067583D")))
@@ -127,7 +127,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
         "/paperless/admin/search/opt-out?taxIdentifierName=nino&taxIdentifierValue=CE067583D"
     }
 
-    "return a not found error message if the preference is not found" in new TestCase {
+    "return a not found error message if the preference is not found" in new SearchControllerTestCase {
       when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(Nil))
       Mockito.reset(auditConnectorMock)
       val result = searchController.search(addToken(FakeRequest("GET", queryParamsForValidNino).withSession(User.sessionKey -> "user")))
@@ -136,7 +136,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
       bodyOf(result).futureValue should include ("No paperless preference found for that identifier.")
     }
 
-    "call the search service with an uppercase taxIdentifier if a lowercase taxIdentifier is provided through the Form" in new TestCase {
+    "call the search service with an uppercase taxIdentifier if a lowercase taxIdentifier is provided through the Form" in new SearchControllerTestCase {
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq(TaxIdentifier("nino", "CE067583D")))
       when(searchServiceMock.searchPreference(any())(any(), any(), any())).thenReturn(Future.successful(List(preference)))
@@ -157,7 +157,7 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
     val genericUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
     val taxCreditsUpdatedAt = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
     val verifiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
-    "redirect to the confirm page" in new TestCase with ScalaFutures {
+    "redirect to the confirm page" in new SearchControllerTestCase with ScalaFutures {
       val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
         Some(Email("john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), Seq())
       when(searchServiceMock.optOut(ArgumentMatchers.eq(TaxIdentifier("nino", "CE067583D")),any())(any(), any(), any())).thenReturn(Future.successful(OptedOut))
@@ -174,31 +174,17 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
   }
 }
 
-trait TestCase extends MockitoSugar {
-
-  implicit val appConfig = mock[FrontendAppConfig]
-
-  when(appConfig.analyticsToken).thenReturn("")
-  when(appConfig.analyticsHost).thenReturn("")
-
-  val auditConnectorMock = mock[AuditConnector]
-  when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
+trait SearchControllerTestCase extends SpecBase with MockitoSugar {
 
   val searchServiceMock = mock[SearchService]
+  when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
   def searchController()(implicit messages: MessagesApi) = new SearchController(auditConnectorMock, searchServiceMock)
 
-  def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
+  override def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
     new ArgumentMatcher[MergedDataEvent]() {
-      def matches(t: MergedDataEvent): Boolean = {
-        t.auditSource == expected.auditSource &&
-        t.auditType == expected.auditType &&
-        t.request.tags == expected.request.tags &&
-        t.request.detail == expected.request.detail &&
-        t.request.generatedAt == expected.request.generatedAt &&
-        t.response.tags == expected.response.tags &&
-        t.response.detail == expected.response.detail &&
-        t.response.generatedAt == expected.response.generatedAt
+      def matches(t: MergedDataEvent): Boolean = this.matches(t) && {
+        t.request.generatedAt == expected.request.generatedAt && t.response.generatedAt == expected.response.generatedAt
       }
     }
   }

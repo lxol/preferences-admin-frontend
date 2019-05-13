@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package uk.gov.hmrc.preferencesadminfrontend
 
 
 import org.scalatest.mockito.MockitoSugar
-import play.api.Configuration
-import uk.gov.hmrc.play.config.inject.RunMode
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
@@ -50,7 +49,7 @@ class LoginServiceSpec extends UnitSpec with MockitoSugar {
   }
 
   trait TestCase {
-    val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], mock[RunMode]){
+    val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], mock[Environment]){
       override lazy val authorisedUsers: Seq[User] = Seq(User("username", "password"))
     }
   }

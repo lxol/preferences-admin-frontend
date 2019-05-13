@@ -1,10 +1,14 @@
 # microservice specific routes
-GET         /assets/*file                            controllers.Assets.at(path="/public", file)
-POST        /logout                                  uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.logout
-POST        /login                                   uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
-GET         /                                        uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.showLoginPage
-GET         /search                                  uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.showSearchPage(taxIdentifierName: String ?= "", taxIdentifierValue: String ?= "")
-GET         /search/q                                uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.search
-POST        /search/opt-out                          uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.optOut(taxIdentifierName: String, taxIdentifierValue: String)
-GET         /search/confirmed                        uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.confirmed(taxIdentifierName: String, taxIdentifierValue: String)
-GET         /search/failed                           uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String)
+GET         /assets/*file                               controllers.Assets.at(path="/public", file)
+POST        /logout                                     uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.logout
+POST        /login                                      uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.login
+GET         /                                           uk.gov.hmrc.preferencesadminfrontend.controllers.LoginController.showLoginPage
+GET         /search                                     uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.showSearchPage(taxIdentifierName: String ?= "", taxIdentifierValue: String ?= "")
+GET         /search/q                                   uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.search
+POST        /search/opt-out                             uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.optOut(taxIdentifierName: String, taxIdentifierValue: String)
+GET         /search/confirmed                           uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.confirmed(taxIdentifierName: String, taxIdentifierValue: String)
+GET         /search/failed                              uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController.failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String)
+GET         /rescindment                                uk.gov.hmrc.preferencesadminfrontend.controllers.RescindmentController.showRescindmentPage
+GET         /rescindment/q                              uk.gov.hmrc.preferencesadminfrontend.controllers.RescindmentController.rescindment
+GET         /rescindment/send                           uk.gov.hmrc.preferencesadminfrontend.controllers.RescindmentController.showRescindmentAlertsPage
+GET         /rescindment/send/q                         uk.gov.hmrc.preferencesadminfrontend.controllers.RescindmentController.sendRescindmentAlerts

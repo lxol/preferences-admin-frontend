@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,12 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.Configuration
 import play.api.http._
 import play.api.i18n.MessagesApi
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.config.inject.{AppName, RunMode}
-import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
-import uk.gov.hmrc.preferencesadminfrontend.services.{LoginService, LoginServiceConfiguration}
-import uk.gov.hmrc.preferencesadminfrontend.utils.CSRFTest
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
+import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
 
 import scala.concurrent.Future
 
@@ -99,21 +95,8 @@ class LoginControllerSpec
   }
 }
 
-trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite {
-
-  implicit val appConfig = mock[FrontendAppConfig]
+trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite with SpecBase {
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
-
-  when(appConfig.analyticsToken).thenReturn("")
-  when(appConfig.analyticsHost).thenReturn("")
-
-  val auditConnectorMock = mock[AuditConnector]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
-
-  val playConfiguration = app.injector.instanceOf[Configuration]
-  val runMode = app.injector.instanceOf[RunMode]
-  val appName = app.injector.instanceOf[AppName]
-
-  val loginServiceConfiguration = new LoginServiceConfiguration(playConfiguration, runMode)
-  val loginController = new LoginController(new LoginService(loginServiceConfiguration), auditConnectorMock, appName)
+  val loginController = app.injector.instanceOf[LoginController]
 }

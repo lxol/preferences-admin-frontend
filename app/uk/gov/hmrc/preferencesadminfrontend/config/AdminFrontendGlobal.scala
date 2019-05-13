@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import play.api.{Application, Configuration}
 import play.filters.csrf.CSRFFilter
 import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.inject.RunMode
+import uk.gov.hmrc.play.config.RunMode
 import uk.gov.hmrc.play.frontend.bootstrap.DefaultFrontendGlobal
 import uk.gov.hmrc.preferencesadminfrontend.config.filters.{PreferencesFrontendAuditFilter, SessionTimeoutFilterWithEntryPoint}
 import uk.gov.hmrc.play.frontend.filters.{ FrontendLoggingFilter, SessionTimeoutFilter }
