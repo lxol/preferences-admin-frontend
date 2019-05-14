@@ -19,17 +19,17 @@ package uk.gov.hmrc.preferencesadminfrontend.connectors
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import javax.inject.{Inject, Singleton}
-import play.api.Mode.Mode
 import play.api.{Configuration, Environment, Play}
-import play.api.http.Status
-import uk.gov.hmrc.http.hooks.HttpHook
+import play.api.http.Status._
+import play.api.Mode.Mode
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.audit.http.HttpAuditing
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.config.{AppName, ServicesConfig}
+import uk.gov.hmrc.play.http.ws.{WSDelete, WSGet, WSPost}
 import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
-import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
+import uk.gov.hmrc.preferencesadminfrontend.model._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,14 +38,14 @@ class MessageConnector @Inject()(frontendAuditConnector: FrontendAuditConnector,
                                  environment: Environment,
                                  val runModeConfiguration: Configuration,
                                  val actorSystem: ActorSystem) extends HttpGet with WSGet
-  with HttpPost with WSPost with HttpAuditing with AppName with ServicesConfig {
+  with HttpPost with HttpDelete with WSPost with WSDelete with HttpAuditing with AppName with ServicesConfig {
 
   override protected def mode: Mode = environment.mode
   override def appNameConfiguration: Configuration = Play.current.configuration
   override lazy val configuration: Option[Config] = None
 
   val hooks: Seq[HttpHook] = Seq()
-  override val auditConnector = frontendAuditConnector
+  override val auditConnector: AuditConnector = frontendAuditConnector
 
   def serviceUrl: String = baseUrl("message")
 
@@ -58,4 +58,23 @@ class MessageConnector @Inject()(frontendAuditConnector: FrontendAuditConnector,
                      (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentAlertsResult] = {
     POSTEmpty[RescindmentAlertsResult](s"$serviceUrl/admin/send-rescindment-alerts")
   }
+
+  def getWhitelist()(implicit hc:HeaderCarrier): Future[HttpResponse] = {
+    GET[HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist").recover {
+      case e: Exception => HttpResponse(BAD_GATEWAY,None,Map(),Some(e.getMessage))
+    }
+  }
+
+  def addFormIdToWhitelist(formIdEntry: WhitelistEntry)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    POST[WhitelistEntry,HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/add",formIdEntry).recover {
+      case e: Exception => HttpResponse(BAD_GATEWAY,None,Map(),Some(e.getMessage))
+    }
+  }
+
+  def deleteFormIdFromWhitelist(formIdEntry: WhitelistEntry)(implicit hc:HeaderCarrier): Future[HttpResponse] = {
+    POST[WhitelistEntry,HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/delete", formIdEntry).recover {
+      case e: Exception => HttpResponse(BAD_GATEWAY,None,Map(),Some(e.getMessage))
+    }
+  }
+
 }

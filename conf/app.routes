@@ -12,3 +12,8 @@ GET         /rescindment                                uk.gov.hmrc.preferencesa
 GET         /rescindment/q                              uk.gov.hmrc.preferencesadminfrontend.controllers.RescindmentController.rescindment
 GET         /rescindment/send                           uk.gov.hmrc.preferencesadminfrontend.controllers.RescindmentController.showRescindmentAlertsPage
 GET         /rescindment/send/q                         uk.gov.hmrc.preferencesadminfrontend.controllers.RescindmentController.sendRescindmentAlerts
+GET         /whitelist                                  uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.showWhitelistPage
+GET         /whitelist/add                              uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.addFormId
+POST        /whitelist/add                              uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.confirmAdd
+GET         /whitelist/delete/:formId                   uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.deleteFormId(formId: String)
+POST        /whitelist/delete                           uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.confirmDelete
