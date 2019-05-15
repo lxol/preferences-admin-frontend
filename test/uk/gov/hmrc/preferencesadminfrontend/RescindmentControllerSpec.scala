@@ -32,6 +32,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
 import controllers.{RescindmentController, routes}
+import org.jsoup.Jsoup
 import play.api.mvc.AnyContentAsFormUrlEncoded
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services._
@@ -103,6 +104,10 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
       val result = rescindmentController.rescindment()(addToken(requestWithFormData))
 
       status(result) shouldBe Status.OK
+      val document = Jsoup.parse(bodyOf(result).futureValue)
+      document.body().getElementById("heading-succeeded").text() shouldBe "Rescindment - Updated: 1"
+      document.body().getElementById("heading-sent").text() shouldBe "Sent: -"
+      document.body().getElementById("heading-failed").text() shouldBe "Failed: -"
     }
 
     "redirect to login page if not authorised" in new RescindmentTestCase {
@@ -131,6 +136,10 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
       val result = rescindmentController.sendRescindmentAlerts()(addToken(fakeRequestWithForm))
 
       status(result) shouldBe Status.OK
+      val document = Jsoup.parse(bodyOf(result).futureValue)
+      document.body().getElementById("heading-succeeded").text() shouldBe "Rescindment - Updated: -"
+      document.body().getElementById("heading-sent").text() shouldBe "Sent: 1"
+      document.body().getElementById("heading-failed").text() shouldBe "Failed: 0"
     }
 
     "redirect to login page if not authorised" in new RescindmentTestCase {
