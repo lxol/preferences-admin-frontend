@@ -32,14 +32,18 @@
 @import uk.gov.hmrc.preferencesadminfrontend.controllers.routes
 
 
+@cssLink = {
+    <link rel="stylesheet" type="text/css" href="@controllers.routes.Assets.at("stylesheets/style.css")" />
+}
+
 @head = {
     @uiLayouts.head(
-      linkElem = None,
+      linkElem = Some(cssLink),
       headScripts = None)
     <meta name="format-detection" content="telephone=no" />
 }
 
-<link rel="stylesheet" type="text/css" href="@controllers.routes.Assets.at("stylesheets/style.css")" />
+
 
 @insideHeader = {
     @uiLayouts.header_nav(
