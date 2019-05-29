@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import akka.stream.Materializer
 import org.joda.time.{DateTime, DateTimeZone}
@@ -30,19 +30,18 @@ import play.api.http.Status
 import play.api.i18n.MessagesApi
 import play.api.test.Helpers.{headers, _}
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.OptedOut
-import uk.gov.hmrc.preferencesadminfrontend.controllers.SearchController
+import uk.gov.hmrc.preferencesadminfrontend.controllers
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, Preference, TaxIdentifier}
 import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
 class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with GuiceOneAppPerSuite {
   implicit val hc = HeaderCarrier()
