@@ -50,7 +50,7 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
         if (loginService.isAuthorised(userData)) {
           auditConnector.sendEvent(createLoginEvent(userData.username, true))
           val sessionUpdated = request.session + (User.sessionKey -> userData.username) + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
-          Future.successful(Redirect(routes.SearchController.showSearchPage()).withSession(sessionUpdated))
+          Future.successful(Redirect(routes.HomeController.showHomePage()).withSession(sessionUpdated))
         }
         else {
           auditConnector.sendEvent(createLoginEvent(userData.username, false))
