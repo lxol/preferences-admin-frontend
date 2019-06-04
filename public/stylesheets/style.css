@@ -19,3 +19,30 @@
     background: none;
     background-color: black;
 }
+
+div.home-nav {
+    border: solid 1px #000;
+    padding: 50px;
+}
+
+div.home-nav p.desc {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+div.home-nav ul.menu {
+    margin-left: 50px;
+}
+
+div.home-nav ul.menu li {
+    padding: 10px 0;
+}
+
+
+div.home-nav ul.menu li a {
+    font-size: 1.1em;
+}
+
+a.menu.home, a.menu.home:visited, a.menu.home:hover, a.menu.home:active {
+    color: inherit;
+}

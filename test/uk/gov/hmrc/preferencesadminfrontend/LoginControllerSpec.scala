@@ -61,7 +61,7 @@ class LoginControllerSpec
 
       session(result).data should contain ("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
-      headers(result) should contain ("Location" -> "/paperless/admin/search")
+      headers(result) should contain ("Location" -> "/paperless/admin/home")
     }
 
     "Return unauthorised if credentials are not correct" in {
