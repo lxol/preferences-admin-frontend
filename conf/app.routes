@@ -18,3 +18,7 @@ GET         /whitelist/add                              uk.gov.hmrc.preferencesa
 POST        /whitelist/add                              uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.confirmAdd
 GET         /whitelist/delete/:formId                   uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.deleteFormId(formId: String)
 POST        /whitelist/delete                           uk.gov.hmrc.preferencesadminfrontend.controllers.WhitelistController.confirmDelete
+GET         /message-brake                              uk.gov.hmrc.preferencesadminfrontend.controllers.MessageBrakeController.showAdminPage
+POST        /message-brake/preview                      uk.gov.hmrc.preferencesadminfrontend.controllers.MessageBrakeController.previewMessage
+POST        /message-brake/approve                      uk.gov.hmrc.preferencesadminfrontend.controllers.MessageBrakeController.approveBatch
+POST        /message-brake/reject                       uk.gov.hmrc.preferencesadminfrontend.controllers.MessageBrakeController.rejectBatch

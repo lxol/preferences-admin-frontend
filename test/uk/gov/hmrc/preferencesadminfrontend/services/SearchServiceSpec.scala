@@ -14,29 +14,22 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.services
 
 import org.joda.time.{DateTime, DateTimeZone}
-import org.mockito.ArgumentMatcher
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
-import play.api.Configuration
-import play.api.libs.json.Json
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent}
-import uk.gov.hmrc.play.config.AppName
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
-import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, EntityId, Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures with IntegrationPatience {
 

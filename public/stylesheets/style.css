@@ -46,3 +46,18 @@ div.home-nav ul.menu li a {
 a.menu.home, a.menu.home:visited, a.menu.home:hover, a.menu.home:active {
     color: inherit;
 }
+
+.message-preview {
+    border: 4px solid #005ea5;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding: 15px 10px;
+}
+
+.button-group {
+    margin-top: 15px;
+}
+
+.button-form {
+    display: inline;
+}

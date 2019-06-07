@@ -22,6 +22,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.{Configuration, Environment, Play}
 import play.api.http.Status._
 import play.api.Mode.Mode
+import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.audit.http.HttpAuditing
@@ -61,19 +62,43 @@ class MessageConnector @Inject()(frontendAuditConnector: FrontendAuditConnector,
 
   def getWhitelist()(implicit hc:HeaderCarrier): Future[HttpResponse] = {
     GET[HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist").recover {
-      case e: Exception => HttpResponse(BAD_GATEWAY,None,Map(),Some(e.getMessage))
+      case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
   }
 
   def addFormIdToWhitelist(formIdEntry: WhitelistEntry)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     POST[WhitelistEntry,HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/add",formIdEntry).recover {
-      case e: Exception => HttpResponse(BAD_GATEWAY,None,Map(),Some(e.getMessage))
+      case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
   }
 
   def deleteFormIdFromWhitelist(formIdEntry: WhitelistEntry)(implicit hc:HeaderCarrier): Future[HttpResponse] = {
     POST[WhitelistEntry,HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/delete", formIdEntry).recover {
-      case e: Exception => HttpResponse(BAD_GATEWAY,None,Map(),Some(e.getMessage))
+      case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
+    }
+  }
+
+  def getGmcBatches()(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    GET[HttpResponse](s"$serviceUrl/admin/message/brake/gmc/batches").recover {
+      case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
+    }
+  }
+
+  def getRandomMessagePreview(batch: GmcBatch)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    POST[GmcBatch,HttpResponse](s"$serviceUrl/admin/message/brake/random", batch).recover {
+      case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
+    }
+  }
+
+  def approveGmcBatch(batch: GmcBatch)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    POST[GmcBatch,HttpResponse](s"$serviceUrl/admin/message/brake/accept", batch).recover {
+      case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
+    }
+  }
+
+  def rejectGmcBatch(batch: GmcBatch)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    POST[GmcBatch,HttpResponse](s"$serviceUrl/admin/message/brake/reject", batch).recover {
+      case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
   }
 

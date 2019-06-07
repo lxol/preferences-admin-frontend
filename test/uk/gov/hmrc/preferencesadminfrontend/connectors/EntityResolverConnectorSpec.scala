@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
+package uk.gov.hmrc.preferencesadminfrontend.connectors
 
 import akka.actor.ActorSystem
 import org.joda.time.{DateTime, DateTimeZone}
@@ -22,17 +22,17 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.{Configuration, Environment}
 import play.api.http.Status
 import play.api.libs.json._
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, EntityResolverConnector, OptedOut, PreferenceNotFound}
+import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse}
 
 class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
