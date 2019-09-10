@@ -17,14 +17,13 @@
 package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
 import javax.inject.Singleton
-
 import akka.stream.Materializer
 import com.google.inject.Inject
 import play.api.Configuration
-import uk.gov.hmrc.play.frontend.filters.FrontendLoggingFilter
+import uk.gov.hmrc.play.bootstrap.filters.LoggingFilter
 
 @Singleton
-class PreferencesFrontendLoggingFilter @Inject()(configuration: Configuration)(implicit val mat: Materializer) extends FrontendLoggingFilter {
+class PreferencesFrontendLoggingFilter @Inject()(configuration: Configuration)(implicit val mat: Materializer) extends LoggingFilter {
 
   override def controllerNeedsLogging(controllerName: String): Boolean = {
     configuration.getBoolean(s"controllers.$controllerName.needsLogging").getOrElse(true)

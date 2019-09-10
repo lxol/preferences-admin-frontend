@@ -17,15 +17,12 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Play}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent}
-import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
-import uk.gov.hmrc.preferencesadminfrontend.controllers.model.{Rescindment, Search}
+import uk.gov.hmrc.preferencesadminfrontend.controllers.model.Rescindment
 import uk.gov.hmrc.preferencesadminfrontend.services.RescindmentService
 
 import scala.concurrent.Future
@@ -33,9 +30,7 @@ import scala.concurrent.Future
 @Singleton
 class RescindmentController @Inject()(auditConnector: AuditConnector, rescindmentService: RescindmentService)
                                      (implicit appConfig: AppConfig, val messagesApi: MessagesApi)
-  extends FrontendController with AppName with I18nSupport {
-
-  def appNameConfiguration: Configuration = Play.current.configuration
+  extends FrontendController with I18nSupport {
 
   def showRescindmentPage(): Action[AnyContent] = AuthorisedAction.async {
     implicit request =>

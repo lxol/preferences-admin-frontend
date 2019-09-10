@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend.config.filters
+package uk.gov.hmrc.preferencesadminfrontend.connectors
 
-import javax.inject.Singleton
-
-import com.google.inject.Inject
-import play.api.http.DefaultHttpFilters
-import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
+import javax.inject.{Inject, Singleton}
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.bootstrap.config.LoadAuditingConfig
+import uk.gov.hmrc.play.config.AppName
 
 @Singleton
-class MicroserviceFilters @Inject()(frontendFilters: FrontendFilters) extends DefaultHttpFilters(frontendFilters.frontendFilters:_*)
+class FrontendAuditConnector @Inject()(configuration: Configuration, environment: Environment, appName: AppName) extends AuditConnector {
+  override lazy val auditingConfig = LoadAuditingConfig(configuration, environment.mode, s"auditing")
+}

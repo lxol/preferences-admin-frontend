@@ -20,12 +20,11 @@ import play.api.Mode.Mode
 import play.api.{Configuration, Logger, LoggerLike, Play}
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.bootstrap.filters.{FrontendFilters, LoggingFilter}
 import uk.gov.hmrc.play.config.RunMode
-import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.config._
 import uk.gov.hmrc.preferencesadminfrontend.config.filters.PreferencesFrontendLoggingFilter
-import uk.gov.hmrc.play.frontend.filters.FrontendLoggingFilter
+import uk.gov.hmrc.preferencesadminfrontend.connectors.FrontendAuditConnector
 
 class Module extends AbstractModule {
 
@@ -35,7 +34,7 @@ class Module extends AbstractModule {
     bind(classOf[FrontendStartup]).asEagerSingleton()
     bind(classOf[AppConfig]).to(classOf[FrontendAppConfig]).asEagerSingleton()
     bind(classOf[FrontendFilters]).to(classOf[AdminFrontendGlobal]).asEagerSingleton()
-    bind(classOf[FrontendLoggingFilter]).to(classOf[PreferencesFrontendLoggingFilter])
+    bind(classOf[LoggingFilter]).to(classOf[PreferencesFrontendLoggingFilter])
     bind(classOf[LoggerLike]) toInstance Logger
     bind(classOf[AuditConnector]).to(classOf[FrontendAuditConnector])
 

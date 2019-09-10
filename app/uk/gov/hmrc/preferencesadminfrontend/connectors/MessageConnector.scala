@@ -22,14 +22,12 @@ import javax.inject.{Inject, Singleton}
 import play.api.{Configuration, Environment, Play}
 import play.api.http.Status._
 import play.api.Mode.Mode
-import play.api.libs.json.Json
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.{AppName, ServicesConfig}
 import uk.gov.hmrc.play.http.ws.{WSDelete, WSGet, WSPost}
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.model._
 
 import scala.concurrent.{ExecutionContext, Future}

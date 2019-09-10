@@ -28,7 +28,6 @@ import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.config.AppName
 

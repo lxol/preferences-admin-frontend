@@ -28,7 +28,7 @@ import play.twirl.api.Html
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.RunMode
 import uk.gov.hmrc.play.frontend.bootstrap.DefaultFrontendGlobal
-import uk.gov.hmrc.preferencesadminfrontend.config.filters.{PreferencesFrontendAuditFilter, SessionTimeoutFilterWithEntryPoint}
+import uk.gov.hmrc.preferencesadminfrontend.config.filters.{PreferencesFrontendAuditFilter, SessionTimeoutWithEntryPointFilter}
 import uk.gov.hmrc.play.frontend.filters.{ FrontendLoggingFilter, SessionTimeoutFilter }
 
 @Singleton
@@ -48,20 +48,20 @@ class AdminFrontendGlobal @Inject()(
 
   override lazy val sessionTimeoutFilter: SessionTimeoutFilter = {
 
-    val defaultTimeout = Duration.standardMinutes(15)
-    val timeoutDuration = configuration
-      .getLong("session.timeoutSeconds")
-      .map(Duration.standardSeconds)
-      .getOrElse(defaultTimeout)
+//    val defaultTimeout = Duration.standardMinutes(15)
+//    val timeoutDuration = configuration
+//      .getLong("session.timeoutSeconds")
+//      .map(Duration.standardSeconds)
+//      .getOrElse(defaultTimeout)
 
-    val wipeIdleSession = configuration
-      .getBoolean("session.wipeIdleSession")
-      .getOrElse(true)
+//    val wipeIdleSession = configuration
+//      .getBoolean("session.wipeIdleSession")
+//      .getOrElse(true)
 
-    val additionalSessionKeysToKeep = configuration
-      .getStringSeq("session.additionalSessionKeysToKeep")
-      .getOrElse(Seq.empty).toSet
+//    val additionalSessionKeysToKeep = configuration
+//      .getStringSeq("session.additionalSessionKeysToKeep")
+//      .getOrElse(Seq.empty).toSet
 
-    new SessionTimeoutFilterWithEntryPoint(timeoutDuration = timeoutDuration)
+    new SessionTimeoutWithEntryPointFilter(timeoutDuration = timeoutDuration)
   }
 }

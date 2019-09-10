@@ -17,7 +17,6 @@
 package uk.gov.hmrc.preferencesadminfrontend.config
 
 import javax.inject.{Inject, Provider, Singleton}
-
 import play.api.http.DefaultHttpErrorHandler
 import play.api.http.Status.{BAD_REQUEST, NOT_FOUND}
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -27,8 +26,8 @@ import play.api.{Configuration, Environment, OptionalSourceMapper, UsefulExcepti
 import play.twirl.api.Html
 import uk.gov.hmrc.play.config.AppName
 import uk.gov.hmrc.play.frontend.bootstrap.ShowErrorPage
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.play.audit.http.HttpAuditing
+import uk.gov.hmrc.preferencesadminfrontend.connectors.FrontendAuditConnector
 
 import scala.concurrent.Future
 

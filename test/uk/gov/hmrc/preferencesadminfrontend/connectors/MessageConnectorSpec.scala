@@ -28,7 +28,6 @@ import play.api.libs.json._
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.model._
 
 import scala.concurrent.ExecutionContext.Implicits.global

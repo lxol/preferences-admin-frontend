@@ -17,14 +17,10 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-
-import play.api.{Configuration, Play}
-import play.api.data.Form
-import play.api.data.Forms.{mapping, text}
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.mvc.{Action, AnyContent}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, OptedOut, PreferenceNotFound}
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.{OptOutReason, Search}
@@ -35,18 +31,16 @@ import scala.concurrent.Future
 
 @Singleton
 class SearchController @Inject()(auditConnector: AuditConnector, searchService: SearchService)
-                                (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
+                                (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {
 
-  def appNameConfiguration: Configuration = Play.current.configuration
-
-  def showSearchPage(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
+  def showSearchPage(taxIdentifierName: String, taxIdentifierValue: String): Action[AnyContent] = AuthorisedAction.async {
     implicit request =>
       implicit user =>
         Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search()
               .bind(Map("name" -> taxIdentifierName, "value" -> taxIdentifierValue)).discardingErrors)))
   }
 
-  def search = AuthorisedAction.async {
+  def search: Action[AnyContent] = AuthorisedAction.async {
     implicit request =>
       implicit user =>
         Search().bindFromRequest.fold(
@@ -54,7 +48,8 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
           searchTaxIdentifier => {
             searchService.searchPreference(searchTaxIdentifier).map {
               case Nil =>
-                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(
+                  Search().bindFromRequest.withError("value", "error.preference_not_found")))
               case preferenceList =>
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(OptOutReason(), searchTaxIdentifier, preferenceList))
             }
@@ -62,7 +57,7 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
         )
   }
 
-  def optOut(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
+  def optOut(taxIdentifierName: String, taxIdentifierValue: String): Action[AnyContent] = AuthorisedAction.async {
     implicit request =>
       implicit user =>
         val identifier = TaxIdentifier(taxIdentifierName, taxIdentifierValue)
@@ -70,7 +65,8 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
           errors => {
             searchService.getPreference(identifier).map {
               case Nil =>
-                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(
+                  Search().bindFromRequest.withError("value", "error.preference_not_found")))
               case preferences =>
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(errors, identifier, preferences))
             }
@@ -85,7 +81,7 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
         )
   }
 
-  def confirmed(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
+  def confirmed(taxIdentifierName: String, taxIdentifierValue: String): Action[AnyContent] = AuthorisedAction.async {
     implicit request =>
       implicit user =>
         searchService.getPreference(TaxIdentifier(taxIdentifierName, taxIdentifierValue)).map {
@@ -96,7 +92,7 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
           }
   }
 
-  def failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String) = AuthorisedAction.async {
+  def failed(taxIdentifierName: String, taxIdentifierValue: String, failureCode: String): Action[AnyContent] = AuthorisedAction.async {
     implicit request =>
       implicit user =>
         searchService.getPreference(TaxIdentifier(taxIdentifierName, taxIdentifierValue)).map { preference =>
