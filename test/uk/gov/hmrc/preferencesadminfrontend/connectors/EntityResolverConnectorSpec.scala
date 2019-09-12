@@ -30,7 +30,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
@@ -238,7 +238,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
     def entityConnectorGetMock(expectedPath: String, jsonBody: JsValue, status: Int): EntityResolverConnector = {
       new EntityResolverConnector(frontendAuditConnector, environment, configuration, actorSystem) {
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+        override def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           when(mockResponse.json).thenReturn(jsonBody)
           when(mockResponse.status).thenReturn(status)
@@ -249,7 +249,7 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
     def entityConnectorGetMock(expectedPath: String, error: Throwable): EntityResolverConnector = {
       new EntityResolverConnector(frontendAuditConnector, environment, configuration, actorSystem) {
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+        override def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           Future.failed(error)
         }
@@ -258,17 +258,16 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
     def entityConnectorPostMock(expectedPath: String, jsonBody: JsValue, status: Int): EntityResolverConnector = {
       new EntityResolverConnector(frontendAuditConnector, environment, configuration, actorSystem) {
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+        override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           when(mockResponse.json).thenReturn(jsonBody)
           when(mockResponse.status).thenReturn(status)
-          Future.successful(mockResponse)
-        }
+          Future.successful(mockResponse)        }
       }
     }
 
 
-    def taxIdentifiersResponseFor(taxIds: TaxIdentifier*) = {
+    def taxIdentifiersResponseFor(taxIds: TaxIdentifier*): JsObject = {
       val taxIdsJson: Seq[(String, JsValue)] = taxIds.map {
         case TaxIdentifier(name, value) => name -> JsString(value)
       }

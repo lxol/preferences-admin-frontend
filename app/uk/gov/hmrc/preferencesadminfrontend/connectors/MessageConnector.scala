@@ -36,7 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class MessageConnector @Inject()(frontendAuditConnector: FrontendAuditConnector,
                                  environment: Environment,
                                  val runModeConfiguration: Configuration,
-                                 val actorSystem: ActorSystem) extends HttpGet with WSGet
+                                 val actorSystem: ActorSystem)(implicit ec: ExecutionContext) extends HttpGet with WSGet
   with HttpPost with HttpDelete with WSPost with WSDelete with HttpAuditing with AppName with ServicesConfig {
 
   override protected def mode: Mode = environment.mode

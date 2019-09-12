@@ -31,7 +31,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.model._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class MessageConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
@@ -266,18 +266,18 @@ class MessageConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPe
     def messageConnectorHttpMock(expectedPath: String, jsonBody: JsValue, status: Int): MessageConnector = {
       new MessageConnector(frontendAuditConnector, environment, configuration, actorSystem) {
 
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+        override def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           Future.successful(HttpResponse(status, Some(jsonBody)))
         }
 
         override def doPost[A](url: String, body: A, headers: Seq[(String, String)])
-                              (implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+                              (implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           Future.successful(HttpResponse(status, Some(jsonBody)))
         }
 
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+        override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           Future.successful(HttpResponse(status, Some(jsonBody)))
         }
@@ -287,18 +287,18 @@ class MessageConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPe
     def messageConnectorHttpMock(expectedPath: String, error: Throwable): MessageConnector = {
       new MessageConnector(frontendAuditConnector, environment, configuration, actorSystem) {
 
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.failed(error)
-        }
-
         override def doPost[A](url: String, body: A, headers: Seq[(String, String)])
-                              (implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
+                              (implicit rds: Writes[A], hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           Future.failed(error)
         }
 
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+        override def doEmptyPost[A](url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
+          url should include(expectedPath)
+          Future.failed(error)
+        }
+
+        override def doGet(url: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[HttpResponse] = {
           url should include(expectedPath)
           Future.failed(error)
         }

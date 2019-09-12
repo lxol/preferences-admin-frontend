@@ -34,6 +34,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig}
 import uk.gov.hmrc.preferencesadminfrontend.connectors.OptedOut
 import uk.gov.hmrc.preferencesadminfrontend.controllers
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
@@ -45,6 +46,7 @@ import scala.concurrent.Future
 
 class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with GuiceOneAppPerSuite {
   implicit val hc = HeaderCarrier()
+  implicit val appConfig = app.injector.instanceOf[FrontendAppConfig]
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   implicit val materializer = app.injector.instanceOf[Materializer]
   val playConfiguration = app.injector.instanceOf[Configuration]
@@ -178,7 +180,7 @@ trait SearchControllerTestCase extends SpecBase with MockitoSugar {
   val searchServiceMock = mock[SearchService]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
-  def searchController()(implicit messages: MessagesApi) = new SearchController(auditConnectorMock, searchServiceMock)
+  def searchController()(implicit appConfig: AppConfig, messages: MessagesApi):SearchController = new SearchController(auditConnectorMock, searchServiceMock)
 
   override def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
     new ArgumentMatcher[MergedDataEvent]() {

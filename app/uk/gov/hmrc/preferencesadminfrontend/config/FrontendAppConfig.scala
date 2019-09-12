@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.config
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment, Play}
 import uk.gov.hmrc.play.config.ServicesConfig
@@ -28,6 +28,7 @@ trait AppConfig {
   val reportAProblemNonJSUrl: String
 }
 
+@Singleton
 class FrontendAppConfig @Inject()(val runModeConfiguration: Configuration,
                                   val environment: Environment) extends AppConfig with ServicesConfig {
 

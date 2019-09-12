@@ -19,17 +19,21 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig}
 import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
 import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class RescindmentServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures with IntegrationPatience {
+class RescindmentServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures with IntegrationPatience with GuiceOneAppPerSuite {
 
   implicit val hc = HeaderCarrier()
+  implicit val appConfig = app.injector.instanceOf[FrontendAppConfig]
+
 
   "addRescindments" should {
     "return a valid update result" in new RescindmentServiceTestCase {

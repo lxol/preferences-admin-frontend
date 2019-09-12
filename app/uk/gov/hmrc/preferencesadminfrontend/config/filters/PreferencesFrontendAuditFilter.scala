@@ -19,19 +19,17 @@ package uk.gov.hmrc.preferencesadminfrontend.config.filters
 import akka.stream.Materializer
 import javax.inject.Inject
 import play.api.Configuration
-import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
-import uk.gov.hmrc.play.bootstrap.filters.frontend.{DefaultFrontendAuditFilter, FrontendAuditFilter}
-import uk.gov.hmrc.play.config.{AppName, RunMode}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.bootstrap.config.ControllerConfigs
+import uk.gov.hmrc.play.bootstrap.filters.frontend.DefaultFrontendAuditFilter
 
-class PreferencesFrontendAuditFilter @Inject()(configuration: Configuration, name: AppName,
-                                               runMode: RunMode,
-                                               frontendAuditConnector: DefaultAuditConnector)(implicit val mat: Materializer) extends DefaultFrontendAuditFilter {
+class PreferencesFrontendAuditFilter @Inject()(
+                                                override val configuration: Configuration,
+                                                controllerConfigs: ControllerConfigs,
+                                                override val auditConnector: AuditConnector,
+                                                override val mat: Materializer
+) extends DefaultFrontendAuditFilter(configuration,controllerConfigs,auditConnector, mat) {
 
   override val maskedFormFields = Seq("password")
-  lazy val auditConnector = frontendAuditConnector
 
-  def controllerNeedsAuditing(controllerName: String): Boolean =
-    configuration.getBoolean(s"controllers.$controllerName.needsAuditing").getOrElse(true)
-
-  override def appName: String = name.appName
 }

@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.AppName
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
@@ -27,7 +28,7 @@ import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, Resc
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class RescindmentService @Inject()(messageConnector: MessageConnector, auditConnector: AuditConnector, appName: AppName) {
+class RescindmentService @Inject()(messageConnector: MessageConnector, auditConnector: AuditConnector, appName: AppName)(implicit appConfig: AppConfig) {
 
   def addRescindments(rescindmentRequest: RescindmentRequest)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentUpdateResult] = {
     messageConnector.addRescindments(rescindmentRequest)

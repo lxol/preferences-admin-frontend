@@ -95,7 +95,7 @@ class LoginControllerSpec
   }
 }
 
-trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite with SpecBase {
+trait LoginControllerFixtures extends SpecBase {
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
   val loginController = app.injector.instanceOf[LoginController]

@@ -19,20 +19,24 @@ package uk.gov.hmrc.preferencesadminfrontend.utils
 import org.mockito.ArgumentMatcher
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
+import play.api.inject.Injector
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
+import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig}
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{EntityResolverConnector, MessageConnector, PreferencesConnector}
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.RescindmentService
 
 import scala.concurrent.Future
 
-trait SpecBase extends MockitoSugar {
+trait SpecBase extends UnitSpec with GuiceOneAppPerSuite with MockitoSugar {
 
-  implicit val appConfig = mock[FrontendAppConfig]
+  lazy val injector: Injector = app.injector
+  implicit val appConfig: AppConfig = injector.instanceOf[FrontendAppConfig]
   implicit val user = User("me", "mySecretPassword")
 
   when(appConfig.analyticsToken).thenReturn("")

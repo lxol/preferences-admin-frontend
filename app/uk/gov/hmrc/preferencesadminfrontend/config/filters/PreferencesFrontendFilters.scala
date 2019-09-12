@@ -34,7 +34,7 @@ class PreferencesFrontendFilters @Inject()(
                                  loggingFilter: LoggingFilter,
                                  headersFilter: HeadersFilter,
                                  securityFilter: SecurityHeadersFilter,
-                                 frontendAuditFilter: FrontendAuditFilter,
+                                 frontendAuditFilter: PreferencesFrontendAuditFilter,
                                  metricsFilter: MetricsFilter,
                                  deviceIdFilter: DeviceIdFilter,
                                  csrfFilter: CSRFFilter,
