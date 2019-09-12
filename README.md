@@ -1,6 +1,9 @@
+
 # preferences-admin-frontend
 
 [![Build Status](https://travis-ci.org/hmrc/preferences-admin-frontend.svg)](https://travis-ci.org/hmrc/preferences-admin-frontend) [ ![Download](https://api.bintray.com/packages/hmrc/releases/preferences-admin-frontend/images/download.svg) ](https://bintray.com/hmrc/releases/preferences-admin-frontend/_latestVersion)
+
+**IMPORTANT NOTE!!!** THIS BRANCH IS A WORK IN PROGRESS TO UPGRADE THE UNDERLYING BOOTSTRAP LIBRARY FROM THE ARCHIVED [frontend-bootstrap](https://github.com/hmrc/frontend-bootstrap) to [bootstrap-play-25](https://github.com/hmrc/bootstrap-play-25)
 
 ## How to add a new user?
 
