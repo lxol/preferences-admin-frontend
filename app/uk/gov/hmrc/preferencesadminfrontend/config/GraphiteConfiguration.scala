@@ -18,12 +18,12 @@ package uk.gov.hmrc.preferencesadminfrontend.config
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit._
-import javax.inject.Inject
 
+import javax.inject.Inject
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
 import com.codahale.metrics.{MetricFilter, SharedMetricRegistries}
 import play.api.{Configuration, Logger}
-import uk.gov.hmrc.play.config.RunMode
+import uk.gov.hmrc.play.bootstrap.config.RunMode
 
 class GraphiteConfiguration @Inject()(configuration: Configuration, runMode: RunMode) {
 

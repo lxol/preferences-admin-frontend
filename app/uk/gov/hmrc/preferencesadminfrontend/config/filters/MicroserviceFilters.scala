@@ -17,10 +17,9 @@
 package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
 import javax.inject.Singleton
-
 import com.google.inject.Inject
 import play.api.http.DefaultHttpFilters
-import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
+import uk.gov.hmrc.play.bootstrap.filters.FrontendFilters
 
 @Singleton
 class MicroserviceFilters @Inject()(frontendFilters: FrontendFilters) extends DefaultHttpFilters(frontendFilters.frontendFilters:_*)

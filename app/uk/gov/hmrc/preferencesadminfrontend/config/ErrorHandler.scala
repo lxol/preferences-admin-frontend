@@ -17,19 +17,13 @@
 package uk.gov.hmrc.preferencesadminfrontend.config
 
 import javax.inject.{Inject, Provider, Singleton}
-import play.api.http.DefaultHttpErrorHandler
-import play.api.http.Status.{BAD_REQUEST, NOT_FOUND}
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Request, RequestHeader, Result, Results}
+import play.api.mvc.Request
 import play.api.routing.Router
-import play.api.{Configuration, Environment, OptionalSourceMapper, UsefulException}
+import play.api.{Configuration, Environment, OptionalSourceMapper}
 import play.twirl.api.Html
-import uk.gov.hmrc.play.bootstrap.config.AppName
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
-import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.bootstrap.http.FrontendErrorHandler
-
-import scala.concurrent.Future
+import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 
 @Singleton
 class ErrorHandler @Inject()(env: Environment,
@@ -41,27 +35,7 @@ class ErrorHandler @Inject()(env: Environment,
                              frontendAuditConnector: FrontendAuditConnector)
   extends FrontendErrorHandler with I18nSupport {
 
-  val impl = new HttpAuditing  {
-    override val auditConnector: FrontendAuditConnector = frontendAuditConnector
-    lazy val appName: String = AppName.fromConfiguration(config)
-
-    //override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html =
-    // uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message, appConfig)
-  }
-
   override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html =
       uk.gov.hmrc.preferencesadminfrontend.views.html.error_template(pageTitle, heading, message, appConfig)
 
-  override def onProdServerError(request: RequestHeader, exception: UsefulException): Future[Result] =
-    onError(request, exception)
-
-  override def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] =
-    statusCode match {
-      case BAD_REQUEST => onBadRequest(request, message)
-      case NOT_FOUND => impl.onHandlerNotFound(request)
-      case _ => Future.successful(Results.Status(statusCode)("A client error occurred: " + message))
-    }
-
-  override def onServerError(request: RequestHeader, exception: Throwable): Future[Result] =
-    impl.onError(request, exception)
 }
