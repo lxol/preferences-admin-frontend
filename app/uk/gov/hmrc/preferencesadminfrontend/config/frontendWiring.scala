@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend
-
-import javax.inject.{Inject, Singleton}
-
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector => Auditing}
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.config.LoadAuditingConfig
-
-@Singleton
-class FrontendAuditConnector @Inject()(appName: AppName) extends Auditing {
-  override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
-}
+//package uk.gov.hmrc.preferencesadminfrontend
+//
+//import javax.inject.{Inject, Singleton}
+//
+//import uk.gov.hmrc.play.audit.http.connector.{AuditConnector => Auditing}
+//
+//@Singleton
+//class FrontendAuditConnector @Inject() extends Auditing {
+//  override lazy val auditingConfig = LoadAuditingConfig(s"auditing")
+//}

@@ -17,41 +17,30 @@
 package uk.gov.hmrc.preferencesadminfrontend.connectors
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
 import javax.inject.{Inject, Singleton}
-import play.api.Mode.Mode
-import play.api.{Configuration, Environment, Play}
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
+import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
-import uk.gov.hmrc.play.audit.http.HttpAuditing
-import uk.gov.hmrc.play.config.AppName
 
 @Singleton
-class PreferencesConnector @Inject()(frontendAuditConnector: FrontendAuditConnector,
+class PreferencesConnector @Inject()(frontendAuditConnector: DefaultAuditConnector,
                                      environment: Environment,
+                                     val http: DefaultHttpClient,
                                      val runModeConfiguration: Configuration,
-                                     val actorSystem: ActorSystem) extends HttpGet with WSGet
-  with HttpPost with WSPost with HttpAuditing with AppName with ServicesConfig {
+                                     val servicesConfig: ServicesConfig,
+                                     val actorSystem: ActorSystem) {
 
   implicit val ef = Entity.formats
-  override protected def mode: Mode = environment.mode
-  override def appNameConfiguration: Configuration = Play.current.configuration
-  override lazy val configuration: Option[Config] = None
 
-  val hooks: Seq[HttpHook] = Seq()
-
-  override val auditConnector = frontendAuditConnector
-
-  def serviceUrl = baseUrl("preferences")
+  def serviceUrl = servicesConfig.baseUrl("preferences")
 
   def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[List[PreferenceDetails]] = {
-    GET[List[PreferenceDetails]](s"$serviceUrl/preferences/email/${taxId.value}").recover {
+    http.GET[List[PreferenceDetails]](s"$serviceUrl/preferences/email/${taxId.value}").recover {
       case _: BadRequestException => Nil
     }
   }

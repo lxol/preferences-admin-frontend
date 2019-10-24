@@ -17,24 +17,15 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
-import play.api.data.Forms.{mapping, _}
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.I18nSupport
 import play.api.mvc._
-import uk.gov.hmrc.http.SessionKeys
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
-import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
-import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.concurrent.Future
 
 @Singleton
-class HomeController @Inject()(auditConnector: AuditConnector, appName: AppName)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {
+class HomeController @Inject()(val mcc: MessagesControllerComponents )(implicit appConfig: AppConfig) extends FrontendController(mcc) with I18nSupport {
 
   val showHomePage = Action.async {
     implicit request =>

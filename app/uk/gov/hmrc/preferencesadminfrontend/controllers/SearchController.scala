@@ -17,27 +17,26 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-
-import play.api.{Configuration, Play}
-import play.api.data.Form
-import play.api.data.Forms.{mapping, text}
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.mvc.MessagesControllerComponents
+import play.api.{Configuration, Play}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, OptedOut, PreferenceNotFound}
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.{OptOutReason, Search}
 import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SearchController @Inject()(auditConnector: AuditConnector, searchService: SearchService)
-                                (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
+class SearchController @Inject()(auditConnector: AuditConnector,
+                                 searchService: SearchService,
+                                 mcc: MessagesControllerComponents
 
-  def appNameConfiguration: Configuration = Play.current.configuration
+                                )
+                                (implicit appConfig: AppConfig, ec: ExecutionContext) extends FrontendController(mcc)  with I18nSupport {
 
   def showSearchPage(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
     implicit request =>

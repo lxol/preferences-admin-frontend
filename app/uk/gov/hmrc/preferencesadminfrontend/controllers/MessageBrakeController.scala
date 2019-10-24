@@ -18,18 +18,21 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.Inject
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, AnyContent, Request, Result}
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Request, Result}
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.model.{GmcBatch, GmcBatchApproval}
 import uk.gov.hmrc.preferencesadminfrontend.services.MessageService
 import uk.gov.hmrc.preferencesadminfrontend.views.html.{batch_approval, batch_rejection, error_template, message_brake_admin}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class MessageBrakeController @Inject()(messageConnector: MessageConnector, messageService: MessageService)
-                                      (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {
+class MessageBrakeController @Inject()(messageConnector: MessageConnector,
+                                       messageService: MessageService,
+                                       mcc: MessagesControllerComponents
+                                      )
+                                      (implicit appConfig: AppConfig, ec: ExecutionContext) extends FrontendController(mcc) with I18nSupport {
 
   def showAdminPage: Action[AnyContent] = AuthorisedAction.async {
     implicit request =>

@@ -17,25 +17,28 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-
+import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
+import uk.gov.hmrc.http.SessionKeys
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.config.AppName
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 import uk.gov.hmrc.time.DateTimeUtils
 
-import scala.concurrent.Future
-import uk.gov.hmrc.http.SessionKeys
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class LoginController @Inject()(loginService: LoginService, auditConnector: AuditConnector, appName: AppName)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {
+class LoginController @Inject()(loginService: LoginService,
+                                auditConnector: AuditConnector,
+                                config: Configuration,
+                                mcc:MessagesControllerComponents )(implicit appConfig: AppConfig, ec: ExecutionContext) extends FrontendController(mcc) with I18nSupport {
 
   val showLoginPage = Action.async {
     implicit request =>
@@ -67,14 +70,14 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
   }
 
   def createLoginEvent(username: String, successful: Boolean) = DataEvent(
-    auditSource = appName.appName,
+    auditSource = AppName.fromConfiguration(config),
     auditType = if (successful) "TxSucceeded" else "TxFailed",
     detail = Map("user" -> username),
     tags = Map("transactionName" -> "Login")
   )
 
   def createLogoutEvent(username: String) = DataEvent(
-    auditSource = appName.appName,
+    auditSource = AppName.fromConfiguration(config),
     auditType = "TxSucceeded",
     detail = Map("user" -> username),
     tags = Map("transactionName" -> "Logout")

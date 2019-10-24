@@ -17,9 +17,8 @@
 package uk.gov.hmrc.preferencesadminfrontend.config
 
 import javax.inject.Inject
-import play.api.Mode.Mode
-import play.api.{Configuration, Environment, Play}
-import uk.gov.hmrc.play.config.ServicesConfig
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 trait AppConfig {
   val analyticsToken: String
@@ -28,14 +27,15 @@ trait AppConfig {
   val reportAProblemNonJSUrl: String
 }
 
-class FrontendAppConfig @Inject()(val runModeConfiguration: Configuration,
-                                  val environment: Environment) extends AppConfig with ServicesConfig {
+class FrontendAppConfig @Inject()(val configuration: Configuration,
+                                  val environment: Environment,
+                                  val serviceConfig: ServicesConfig
+                                 ) extends AppConfig  {
 
-  override val mode: Mode = environment.mode
 
-  private def loadConfig(key: String) = runModeConfiguration.getString(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
+  private def loadConfig(key: String) = configuration.getOptional[String](key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
 
-  private val contactHost = runModeConfiguration.getString(s"contact-frontend.host").getOrElse("")
+  private val contactHost = configuration.getOptional[String](s"contact-frontend.host").getOrElse("")
   private val contactFormServiceIdentifier = "MyService"
 
   override lazy val analyticsToken = loadConfig(s"google-analytics.token")

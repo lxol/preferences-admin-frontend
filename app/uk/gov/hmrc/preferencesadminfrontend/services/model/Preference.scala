@@ -18,6 +18,9 @@ package uk.gov.hmrc.preferencesadminfrontend.services.model
 
 import org.joda.time.DateTime
 import play.api.libs.json.Json
+import play.api.libs.json.JodaWrites._
+import play.api.libs.json.JodaReads._
+
 
 case class Preference(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean,  taxCreditsUpdatedAt : Option[DateTime], email: Option[Email], taxIdentifiers: Seq[TaxIdentifier])
 

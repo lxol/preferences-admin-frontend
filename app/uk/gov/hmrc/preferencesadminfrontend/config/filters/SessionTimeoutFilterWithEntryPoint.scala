@@ -16,22 +16,24 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
-import org.joda.time.{DateTime, DateTimeZone, Duration}
-import play.api.mvc.{Filter, RequestHeader, Result}
+import akka.stream.Materializer
+import javax.inject.Inject
+import play.api.mvc.{RequestHeader, Result}
+import uk.gov.hmrc.play.bootstrap.filters.frontend.{SessionTimeoutFilter, SessionTimeoutFilterConfig}
 
-import scala.concurrent.Future
-import uk.gov.hmrc.play.frontend.filters.{ MicroserviceFilterSupport, SessionTimeoutFilter }
+import scala.concurrent.{ExecutionContext, Future}
 
-class SessionTimeoutFilterWithEntryPoint(clock: () => DateTime = () => DateTime.now(DateTimeZone.UTC),
-                                         timeoutDuration: Duration,
-                                         additionalSessionKeysToKeep: Set[String] = Set.empty,
-                                         onlyWipeAuthToken: Boolean = false)
-  extends SessionTimeoutFilter(clock, timeoutDuration, additionalSessionKeysToKeep, onlyWipeAuthToken) with Filter with MicroserviceFilterSupport {
+class SessionTimeoutFilterWithEntryPoint @Inject()(
+                                                      config: SessionTimeoutFilterConfig
+                                                  )(implicit ec: ExecutionContext,
+                                                    override val mat: Materializer)
+    extends SessionTimeoutFilter(config) {
 
-  lazy val entryPoint: String = uk.gov.hmrc.preferencesadminfrontend.controllers.routes.LoginController.showLoginPage().path
+    lazy val entryPoint: String = uk.gov.hmrc.preferencesadminfrontend.controllers.routes.LoginController.showLoginPage().path
 
-  override def apply(f: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
-    if (rh.path == entryPoint) f(rh)
-    else super.apply(f)(rh)
-  }
+    override def apply(f: (RequestHeader) => Future[Result])(rh: RequestHeader): Future[Result] = {
+        if (rh.path == entryPoint) f(rh)
+        else super.apply(f)(rh)
+    }
 }
+
