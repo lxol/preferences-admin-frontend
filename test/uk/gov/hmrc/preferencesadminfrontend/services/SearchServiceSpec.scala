@@ -16,11 +16,13 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services
 
+import com.typesafe.config.ConfigValueFactory
 import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
+import play.api.Configuration
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.test.UnitSpec
@@ -30,6 +32,8 @@ import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.collection.JavaConverters._
+
 
 class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures with IntegrationPatience {
 
@@ -294,7 +298,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     val optedOutPreference = Preference(genericPaperless = false, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
       email = None, taxIdentifiers = taxIdentifiers)
 
-    val searchService = new SearchService(entityResolverConnectorMock, preferencesConnectorMock, auditConnectorMock, appName)
+    val config = Configuration.from(Map("appName" -> "preferences-admin-frontend"))
+    val searchService = new SearchService(entityResolverConnectorMock, preferencesConnectorMock, auditConnectorMock, config)
   }
 
 }

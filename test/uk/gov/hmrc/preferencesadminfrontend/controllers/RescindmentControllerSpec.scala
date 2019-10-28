@@ -27,13 +27,14 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
-import play.api.mvc.AnyContentAsFormUrlEncoded
+import play.api.mvc.{AnyContentAsFormUrlEncoded, MessagesControllerComponents}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{headers, _}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
 import uk.gov.hmrc.preferencesadminfrontend.services._
@@ -45,6 +46,8 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
   implicit val hc = HeaderCarrier()
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   implicit val materializer = app.injector.instanceOf[Materializer]
+
+  implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
   val playConfiguration = app.injector.instanceOf[Configuration]
 
   "showRescindmentPage" should {
@@ -151,11 +154,15 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
 }
 
 trait RescindmentTestCase extends SpecBase with MockitoSugar {
+ import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
+
+ implicit val stubbedMCC: MessagesControllerComponents = stubMessagesControllerComponents()
+ implicit val ecc: ExecutionContext = stubbedMCC.executionContext
 
   val rescindmentServiceMock = mock[RescindmentService]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
-  def rescindmentController()(implicit messages: MessagesApi): RescindmentController = new RescindmentController(auditConnectorMock, rescindmentServiceMock)
+  def rescindmentController()(implicit messages: MessagesApi, appConfig: AppConfig): RescindmentController = new RescindmentController(auditConnectorMock, rescindmentServiceMock, stubbedMCC)
 
   override def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
     new ArgumentMatcher[MergedDataEvent]() {

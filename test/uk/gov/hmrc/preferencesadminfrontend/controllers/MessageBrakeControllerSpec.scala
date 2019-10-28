@@ -26,11 +26,13 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status
 import play.api.i18n.MessagesApi
-import play.api.mvc.{AnyContentAsEmpty, AnyContentAsFormUrlEncoded, Call}
+import play.api.mvc.{AnyContentAsEmpty, AnyContentAsFormUrlEncoded, Call, MessagesControllerComponents}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.{BatchMessagePreview, GmcBatch, GmcBatchApproval, MessagePreview}
@@ -38,6 +40,7 @@ import uk.gov.hmrc.preferencesadminfrontend.services.MessageService
 import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 
 class MessageBrakeControllerSpec extends UnitSpec
   with Matchers
@@ -47,11 +50,14 @@ class MessageBrakeControllerSpec extends UnitSpec
   with CSRFTest
   with ScalaFutures {
 
-  implicit val messagesApi: MessagesApi = app.injector.instanceOf[MessagesApi]
 
   implicit lazy val materializer: Materializer = app.materializer
 
+    implicit val messagesApi: MessagesApi = app.injector.instanceOf[MessagesApi]
+
   implicit lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
+
+  implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   implicit val hc: HeaderCarrier = mock[HeaderCarrier]
 
@@ -218,11 +224,14 @@ class MessageBrakeControllerSpec extends UnitSpec
 
 trait MessageBrakeControllerTestCase extends SpecBase with MockitoSugar {
 
-  val mockMessageConnector: MessageConnector = mock[MessageConnector]
+    implicit val stubbedMCC: MessagesControllerComponents = stubMessagesControllerComponents()
+    implicit val ecc: ExecutionContext = stubbedMCC.executionContext
+   val mockMessageConnector: MessageConnector = mock[MessageConnector]
 
   val mockMessageService: MessageService = mock[MessageService]
 
-  def messageBrakeController()(implicit messages: MessagesApi):MessageBrakeController = new MessageBrakeController(mockMessageConnector, mockMessageService)
+
+    def messageBrakeController()(implicit messages: MessagesApi, appConfig: AppConfig):MessageBrakeController = new MessageBrakeController(mockMessageConnector, mockMessageService, stubbedMCC)
 
   def getRequestWithFormData(routeCall: Call): FakeRequest[AnyContentAsFormUrlEncoded] = {
     val fakeRequestWithSession = FakeRequest(routeCall).withSession(User.sessionKey -> "user")

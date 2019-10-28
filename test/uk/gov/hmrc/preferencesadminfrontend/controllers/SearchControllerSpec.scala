@@ -28,12 +28,14 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
+import play.api.mvc.MessagesControllerComponents
 import play.api.test.Helpers.{headers, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.OptedOut
 import uk.gov.hmrc.preferencesadminfrontend.controllers
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
@@ -41,12 +43,14 @@ import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, Preference, TaxIdentifier}
 import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with GuiceOneAppPerSuite {
   implicit val hc = HeaderCarrier()
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   implicit val materializer = app.injector.instanceOf[Materializer]
+
+  implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
   val playConfiguration = app.injector.instanceOf[Configuration]
 
   "showSearchPage" should {
@@ -175,10 +179,15 @@ class SearchControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with
 
 trait SearchControllerTestCase extends SpecBase with MockitoSugar {
 
+  import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
+
+  implicit val stubbedMCC: MessagesControllerComponents = stubMessagesControllerComponents()
+  implicit val ecc: ExecutionContext = stubbedMCC.executionContext
+
   val searchServiceMock = mock[SearchService]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
-  def searchController()(implicit messages: MessagesApi) = new SearchController(auditConnectorMock, searchServiceMock)
+  def searchController()(implicit messages: MessagesApi, appConfig:AppConfig) = new SearchController(auditConnectorMock, searchServiceMock, stubbedMCC)
 
   override def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
     new ArgumentMatcher[MergedDataEvent]() {

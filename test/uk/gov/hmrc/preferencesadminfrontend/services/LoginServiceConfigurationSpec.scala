@@ -19,10 +19,8 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 import com.google.common.base.Charsets
 import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigException.Missing
-import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.play.config.RunMode
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 

@@ -53,11 +53,12 @@ class LoginControllerSpec
   "POST to login" should {
     "Redirect to the next page if credentials are correct" in {
       val result = loginController.login(
-        addToken(FakeRequest()).withFormUrlEncodedBody(
+        addToken(FakeRequest().withFormUrlEncodedBody(
           "username" -> "user",
           "password" -> "pwd"
         )
       )
+    )
 
       session(result).data should contain ("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
@@ -66,18 +67,18 @@ class LoginControllerSpec
 
     "Return unauthorised if credentials are not correct" in {
       val result = loginController.login(
-        addToken(FakeRequest()).withFormUrlEncodedBody(
+        addToken(FakeRequest().withFormUrlEncodedBody(
           "username" -> "user",
           "password" -> "wrongPassword"
         )
-      )
+      ))
 
       result.futureValue.header.status shouldBe Status.UNAUTHORIZED
     }
 
     "Return bad request if credentials are missing" in {
       val result = loginController.login(
-        addToken(FakeRequest()).withFormUrlEncodedBody()
+        addToken(FakeRequest().withFormUrlEncodedBody())
       )
 
       result.futureValue.header.status shouldBe Status.BAD_REQUEST

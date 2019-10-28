@@ -19,6 +19,8 @@ package uk.gov.hmrc.preferencesadminfrontend.connectors
 import java.util.concurrent.TimeoutException
 
 import akka.actor.ActorSystem
+import org.mockito.ArgumentMatchers._
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -27,6 +29,8 @@ import play.api.http.Status
 import play.api.libs.json._
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.model._
 
@@ -169,7 +173,6 @@ class MessageConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPe
 
     lazy val environment = app.injector.instanceOf[Environment]
     lazy val configuration = app.injector.instanceOf[Configuration]
-    lazy val frontendAuditConnector = app.injector.instanceOf[FrontendAuditConnector]
     lazy val actorSystem = app.injector.instanceOf[ActorSystem]
 
     val expectedAddRescindmentsPath = s"/admin/message/add-rescindments"
@@ -263,46 +266,32 @@ class MessageConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPe
       "some reason"
     )
 
+    lazy val mockServicesConfig:ServicesConfig = mock[ServicesConfig]
     def messageConnectorHttpMock(expectedPath: String, jsonBody: JsValue, status: Int): MessageConnector = {
-      new MessageConnector(frontendAuditConnector, environment, configuration, actorSystem) {
+        val mockHttp: DefaultHttpClient = mock[DefaultHttpClient]
+        when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq(expectedPath))(any(), any(), any()))
+            .thenReturn(Future.successful(HttpResponse(status, Some(jsonBody))))
+        when(mockHttp.POST[WhitelistEntry, HttpResponse](ArgumentMatchers.eq(expectedPath),any() )(any(), any(), any(), any()))
+            .thenReturn(Future.successful(HttpResponse(status, Some(jsonBody))))
+        when(mockHttp.POST[WhitelistEntry, HttpResponse](ArgumentMatchers.eq(expectedPath), any() )(any(), any(), any(), any()))
+            .thenReturn(Future.successful(HttpResponse(status, Some(jsonBody))))
+        when(mockHttp.POSTEmpty[RescindmentAlertsResult](ArgumentMatchers.eq(expectedPath))(any(), any(), any()))
+            .thenReturn(Future.successful(???))
 
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.successful(HttpResponse(status, Some(jsonBody)))
-        }
-
-        override def doPost[A](url: String, body: A, headers: Seq[(String, String)])
-                              (implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.successful(HttpResponse(status, Some(jsonBody)))
-        }
-
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.successful(HttpResponse(status, Some(jsonBody)))
-        }
-      }
+        new MessageConnector(mockHttp, mockServicesConfig )
     }
 
     def messageConnectorHttpMock(expectedPath: String, error: Throwable): MessageConnector = {
-      new MessageConnector(frontendAuditConnector, environment, configuration, actorSystem) {
-
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.failed(error)
-        }
-
-        override def doPost[A](url: String, body: A, headers: Seq[(String, String)])
-                              (implicit rds: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.failed(error)
-        }
-
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.failed(error)
-        }
-      }
+        val mockHttp: DefaultHttpClient = mock[DefaultHttpClient]
+        when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq(expectedPath))(any(), any(), any()))
+            .thenReturn(Future.failed(error))
+        when(mockHttp.POST[WhitelistEntry, HttpResponse](ArgumentMatchers.eq(expectedPath),any() )(any(), any(), any(), any()))
+            .thenReturn(Future.failed(error))
+        when(mockHttp.POST[WhitelistEntry, HttpResponse](ArgumentMatchers.eq(expectedPath), any() )(any(), any(), any(), any()))
+            .thenReturn(Future.failed(error))
+        when(mockHttp.POSTEmpty[RescindmentAlertsResult](ArgumentMatchers.eq(expectedPath))(any(), any(), any()))
+            .thenReturn(Future.failed(error))
+        new MessageConnector(mockHttp, mockServicesConfig )
     }
   }
 }

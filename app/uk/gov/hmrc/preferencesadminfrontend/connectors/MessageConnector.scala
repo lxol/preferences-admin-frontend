@@ -29,11 +29,7 @@ import uk.gov.hmrc.preferencesadminfrontend.model._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class MessageConnector @Inject()(frontendAuditConnector: DefaultAuditConnector,
-                                 http: DefaultHttpClient,
-                                 environment: Environment,
-                                 val runModeConfiguration: Configuration,
-                                 val actorSystem: ActorSystem,
+class MessageConnector @Inject()( http: DefaultHttpClient,
                                 val servicesConfig: ServicesConfig
                                 )(implicit ec:ExecutionContext) {
 

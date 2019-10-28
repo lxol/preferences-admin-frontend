@@ -16,10 +16,10 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services
 
-import javax.inject.Inject
 import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigException.Missing
-import play.api.{Configuration, Environment, Mode, Play}
+import javax.inject.Inject
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.config.RunMode
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
@@ -29,13 +29,12 @@ class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
 }
 
 class LoginServiceConfiguration @Inject()(val configuration: Configuration,
-                                          val environment: Environment,
-                                          val runMode: RunMode) {
+                                          val env: Environment) {
 
   def verifyConfiguration() = if (authorisedUsers.isEmpty) throw new Missing("Property users is empty")
 
   lazy val authorisedUsers: Seq[User] = {
-    configuration.get[Seq[Configuration]](s"${runMode.env}.users").map {
+    configuration.get[Seq[Configuration]](s"$env.users").map {
       userConfig: Configuration =>
         val encodedPwd = userConfig.get[String]("password")
         val decodedPwd = new String(BaseEncoding.base64().decode(encodedPwd))

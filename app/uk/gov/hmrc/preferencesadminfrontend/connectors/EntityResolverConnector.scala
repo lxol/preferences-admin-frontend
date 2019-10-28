@@ -27,24 +27,16 @@ import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, EntityId, Tax
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 
 import scala.util.Try
 
 @Singleton
-class EntityResolverConnector @Inject()(frontendAuditConnector: DefaultAuditConnector,
-                                        http: DefaultHttpClient,
-                                        environment: Environment,
-                                        val runModeConfiguration: Configuration,
-                                        val servicesConfig: ServicesConfig,
-                                        val actorSystem: ActorSystem)  {
+class EntityResolverConnector @Inject()( http: DefaultHttpClient,
+                                        val servicesConfig: ServicesConfig) {
 
   implicit val ef = Entity.formats
-
-  val hooks: Seq[HttpHook] = Seq()
 
   def serviceUrl = servicesConfig.baseUrl("entity-resolver")
 
@@ -73,7 +65,6 @@ class EntityResolverConnector @Inject()(frontendAuditConnector: DefaultAuditConn
         case ex: BadRequestException => Seq.empty
       }
   }
-
 
   def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
     http.GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {

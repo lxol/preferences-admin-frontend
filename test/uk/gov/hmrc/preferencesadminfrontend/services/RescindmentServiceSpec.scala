@@ -59,6 +59,6 @@ class RescindmentServiceSpec extends UnitSpec with MockitoSugar with ScalaFuture
     val rescindmentAlertsResult = RescindmentAlertsResult(
       sent = 1, requeued = 1, failed = 0, hardCopyRequested = 0
     )
-    val rescindmentService = new RescindmentService(messageConnectorMock, auditConnectorMock, appName)
+    val rescindmentService = new RescindmentService(messageConnectorMock )
   }
 }
