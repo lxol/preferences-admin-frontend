@@ -116,82 +116,110 @@ class MessageConnectorSpec extends UnitSpec with ScalaFutures with MockitoSugar 
        }
      }
 
-  //   "deleteFormIdFromWhitelist" should {
-  //     "return a valid sequence of batches with status 200" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedDeleteFormIdFromWhitelistPath, Json.obj(), Status.OK)
-  //         .deleteFormIdFromWhitelist(WhitelistEntry("SA316", "reason")).futureValue
-  //       result.status shouldBe Status.OK
-  //     }
+     "deleteFormIdFromWhitelist" should {
+       "return a valid sequence of batches with status 200" in new TestCase {
+           val expectedPath = s"$serviceUrl/admin/message/brake/gmc/whitelist/delete"
+           when(mockHttp.POST[WhitelistEntry, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.successful(HttpResponse(Status.OK, Some(Json.obj()))))
 
-  //     "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedDeleteFormIdFromWhitelistPath, new TimeoutException("timeout error"))
-  //         .deleteFormIdFromWhitelist(WhitelistEntry("SA316", "reason")).futureValue
-  //       result.status shouldBe Status.BAD_GATEWAY
-  //       result.body should include("timed out with message 'timeout error'")
-  //     }
-  //   }
+           val result = app.injector.instanceOf[MessageConnector].deleteFormIdFromWhitelist(WhitelistEntry("SA316", "reason")).futureValue
+         result.status shouldBe Status.OK
+       }
 
-  //   "getGmcBatches" should {
-  //     "return a valid sequence of batches with status 200" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedGetGmcBatchesPath, getGmcBatchesResultJson, Status.OK)
-  //         .getGmcBatches().futureValue
-  //       result.status shouldBe Status.OK
-  //       result.json shouldBe getGmcBatchesResultJson
-  //     }
+       "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
+         val expectedPath = s"$serviceUrl/admin/message/brake/gmc/whitelist/delete"
+          when(mockHttp.POST[WhitelistEntry, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.failed(new TimeoutException("timeout error")))
+           val result = app.injector.instanceOf[MessageConnector].deleteFormIdFromWhitelist(WhitelistEntry("SA316", "reason")).futureValue
+         result.status shouldBe Status.BAD_GATEWAY
+         result.body should include("timeout error")
+       }
+     }
 
-  //     "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedGetGmcBatchesPath, new TimeoutException("timeout error"))
-  //         .getGmcBatches().futureValue
-  //       result.status shouldBe Status.BAD_GATEWAY
-  //       result.body should include("timed out with message 'timeout error'")
-  //     }
-  //   }
+     "getGmcBatches" should {
+       "return a valid sequence of batches with status 200" in new TestCase {
+           val expectedPath =s"$serviceUrl/admin/message/brake/gmc/batches"
+           when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq(expectedPath))(any(), any(), any()))
+               .thenReturn(Future.successful(HttpResponse(Status.OK, Some(getGmcBatchesResultJson))))
 
-  //   "getRandomMessagePreview" should {
-  //     "return a valid sequence of batches with status 200" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedGetRandomMessagePreviewPath, getRandomMessagePreviewResultJson, Status.OK)
-  //         .getRandomMessagePreview(gmcBatch).futureValue
-  //       result.status shouldBe Status.OK
-  //       result.json shouldBe getRandomMessagePreviewResultJson
-  //     }
+           val result = app.injector.instanceOf[MessageConnector].getGmcBatches().futureValue
+         result.status shouldBe Status.OK
+         result.json shouldBe getGmcBatchesResultJson
+       }
 
-  //     "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedGetRandomMessagePreviewPath, new TimeoutException("timeout error"))
-  //         .getRandomMessagePreview(gmcBatch).futureValue
-  //       result.status shouldBe Status.BAD_GATEWAY
-  //       result.body should include("timed out with message 'timeout error'")
-  //     }
-  //   }
+       "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
+           val expectedPath =s"$serviceUrl/admin/message/brake/gmc/batches"
+           when(mockHttp.GET[HttpResponse](ArgumentMatchers.eq(expectedPath))(any(), any(), any()))
+               .thenReturn(Future.failed(new TimeoutException("timeout error")))
+           val result = app.injector.instanceOf[MessageConnector].getGmcBatches().futureValue
+         result.status shouldBe Status.BAD_GATEWAY
+         result.body should include("timeout error")
+       }
+     }
 
-  //   "approveGmcBatch" should {
-  //     "return a valid sequence of batches with status 200" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedApproveGmcBatchPath, Json.obj(), Status.OK)
-  //         .approveGmcBatch(gmcBatchApproval).futureValue
-  //       result.status shouldBe Status.OK
-  //     }
+     "getRandomMessagePreview" should {
+       "return a valid sequence of batches with status 200" in new TestCase {
+           val expectedPath = s"$serviceUrl/admin/message/brake/random"
 
-  //     "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedApproveGmcBatchPath, new TimeoutException("timeout error"))
-  //         .approveGmcBatch(gmcBatchApproval).futureValue
-  //       result.status shouldBe Status.BAD_GATEWAY
-  //       result.body should include("timed out with message 'timeout error'")
-  //     }
-  //   }
+           when(mockHttp.POST[GmcBatch, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.successful(HttpResponse(Status.OK, Some(getRandomMessagePreviewResultJson))))
+           val result = app.injector.instanceOf[MessageConnector].getRandomMessagePreview(gmcBatch).futureValue
+         result.status shouldBe Status.OK
+         result.json shouldBe getRandomMessagePreviewResultJson
+       }
 
-  //   "rejectGmcBatch" should {
-  //     "return a valid sequence of batches with status 200" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedRejectGmcBatchPath, Json.obj(), Status.OK)
-  //         .rejectGmcBatch(gmcBatchApproval).futureValue
-  //       result.status shouldBe Status.OK
-  //     }
+       "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
+           val expectedPath = s"$serviceUrl/admin/message/brake/random"
 
-  //     "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
-  //       val result = messageConnectorHttpMock(expectedRejectGmcBatchPath, new TimeoutException("timeout error"))
-  //         .rejectGmcBatch(gmcBatchApproval).futureValue
-  //       result.status shouldBe Status.BAD_GATEWAY
-  //       result.body should include("timed out with message 'timeout error'")
-  //     }
-  //   }
+           when(mockHttp.POST[GmcBatch, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.failed(new TimeoutException("timeout error")))
+
+           val result = app.injector.instanceOf[MessageConnector].getRandomMessagePreview(gmcBatch).futureValue
+         result.status shouldBe Status.BAD_GATEWAY
+         result.body should include("timeout error")
+       }
+     }
+
+     "approveGmcBatch" should {
+       "return a valid sequence of batches with status 200" in new TestCase {
+           val expectedPath = s"$serviceUrl/admin/message/brake/accept"
+
+           when(mockHttp.POST[GmcBatchApproval, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.successful(HttpResponse(Status.OK, Some(Json.obj()))))
+
+           val result = app.injector.instanceOf[MessageConnector].approveGmcBatch(gmcBatchApproval).futureValue
+         result.status shouldBe Status.OK
+       }
+
+       "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
+           val expectedPath = s"$serviceUrl/admin/message/brake/accept"
+           when(mockHttp.POST[GmcBatchApproval, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.failed(new TimeoutException("timeout error")))
+           val result = app.injector.instanceOf[MessageConnector].approveGmcBatch(gmcBatchApproval).futureValue
+         result.status shouldBe Status.BAD_GATEWAY
+         result.body should include("timeout error")
+       }
+     }
+
+     "rejectGmcBatch" should {
+       "return a valid sequence of batches with status 200" in new TestCase {
+           val expectedPath = s"$serviceUrl/admin/message/brake/reject"
+           when(mockHttp.POST[GmcBatchApproval, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.successful(HttpResponse(Status.OK, Some(Json.obj()))))
+
+           val result = app.injector.instanceOf[MessageConnector].rejectGmcBatch(gmcBatchApproval).futureValue
+         result.status shouldBe Status.OK
+       }
+
+       "return a BAD GATEWAY with an error message when an error is thrown" in new TestCase {
+           val expectedPath = s"$serviceUrl/admin/message/brake/reject"
+           when(mockHttp.POST[GmcBatchApproval, HttpResponse](ArgumentMatchers.eq(expectedPath),any(), any() )(any(), any(), any(), any()))
+               .thenReturn(Future.failed(new TimeoutException("timeout error")))
+           val result = app.injector.instanceOf[MessageConnector].rejectGmcBatch(gmcBatchApproval).futureValue
+         result.status shouldBe Status.BAD_GATEWAY
+         result.body should include("timeout error")
+       }
+     }
    }
 
   trait TestCase extends MockitoSugar {
