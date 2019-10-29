@@ -41,6 +41,7 @@ class EntityResolverConnector @Inject()( http: DefaultHttpClient,
   def serviceUrl = servicesConfig.baseUrl("entity-resolver")
 
   def getTaxIdentifiers(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
+      println(s"******* getTaxIdentifiers path: ${serviceUrl}/entity-resolver/${taxId.regime}/${taxId.value}")
     val response = http.GET[Option[Entity]](s"$serviceUrl/entity-resolver/${taxId.regime}/${taxId.value}")
     response.map(
       _.fold(Seq.empty[TaxIdentifier])(entity =>
@@ -50,10 +51,12 @@ class EntityResolverConnector @Inject()( http: DefaultHttpClient,
         ).flatten)
     ).recover {
       case ex: BadRequestException => Seq.empty
+      case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) => Seq.empty
+      case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) => Seq.empty
     }
   }
 
-  def getTaxIdentifiers(preferenceDetails: PreferenceDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
+    def getTaxIdentifiers(preferenceDetails: PreferenceDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
       val response = http.GET[Option[Entity]](s"$serviceUrl/entity-resolver/${preferenceDetails.entityId.get}")
       response.map(
         _.fold(Seq.empty[TaxIdentifier])(entity =>
@@ -63,12 +66,16 @@ class EntityResolverConnector @Inject()( http: DefaultHttpClient,
           ).flatten)
       ).recover {
         case ex: BadRequestException => Seq.empty
+        case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) => Seq.empty
+        case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) => Seq.empty
       }
   }
 
   def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
     http.GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {
       case ex: BadRequestException => None
+      case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) => None
+      case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) => None
     }
   }
 
@@ -85,6 +92,9 @@ class EntityResolverConnector @Inject()( http: DefaultHttpClient,
         case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) =>
           warnNotOptedOut(ex.upstreamResponseCode)
           AlreadyOptedOut
+        case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) =>
+            warnNotOptedOut(ex.upstreamResponseCode)
+            PreferenceNotFound
         case ex@Upstream4xxResponse(_, Status.PRECONDITION_FAILED, _, _) =>
           warnNotOptedOut(ex.upstreamResponseCode)
           PreferenceNotFound

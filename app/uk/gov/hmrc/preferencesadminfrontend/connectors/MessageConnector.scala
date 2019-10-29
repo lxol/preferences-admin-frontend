@@ -23,13 +23,13 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
+import uk.gov.hmrc.play.bootstrap.http.{DefaultHttpClient, HttpClient}
 import uk.gov.hmrc.preferencesadminfrontend.model._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class MessageConnector @Inject()( http: DefaultHttpClient,
+class MessageConnector @Inject()( http: HttpClient,
                                 val servicesConfig: ServicesConfig
                                 )(implicit ec:ExecutionContext) {
 
