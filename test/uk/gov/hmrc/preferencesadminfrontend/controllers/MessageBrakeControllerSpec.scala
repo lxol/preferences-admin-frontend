@@ -19,23 +19,25 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 import akka.stream.Materializer
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
-import org.scalatest.Matchers
 import org.mockito.Mockito.when
+import org.scalatest.Matchers
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status
 import play.api.i18n.MessagesApi
-import play.api.mvc.{AnyContentAsEmpty, AnyContentAsFormUrlEncoded, Call}
+import play.api.mvc.{AnyContentAsEmpty, AnyContentAsFormUrlEncoded, Call, MessagesControllerComponents}
+import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.{BatchMessagePreview, GmcBatch, GmcBatchApproval, MessagePreview}
 import uk.gov.hmrc.preferencesadminfrontend.services.MessageService
-import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
+import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -44,14 +46,16 @@ class MessageBrakeControllerSpec extends UnitSpec
   with MockitoSugar
   with GuiceOneAppPerSuite
   with SpecBase
-  with CSRFTest
   with ScalaFutures {
 
-  implicit val messagesApi: MessagesApi = app.injector.instanceOf[MessagesApi]
 
   implicit lazy val materializer: Materializer = app.materializer
 
+    implicit val messagesApi: MessagesApi = app.injector.instanceOf[MessagesApi]
+
   implicit lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
+
+  implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   implicit val hc: HeaderCarrier = mock[HeaderCarrier]
 
@@ -92,14 +96,14 @@ class MessageBrakeControllerSpec extends UnitSpec
     "return a 200 when the admin page is successfully populated with Gmc Message Batches" in new MessageBrakeControllerTestCase {
       private val fakeRequestWithSession = FakeRequest(routes.MessageBrakeController.showAdminPage()).withSession(User.sessionKey -> "user")
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier], any[ExecutionContext])).thenReturn (Future.successful(Left(Seq(gmcBatch))))
-      private val result = messageBrakeController.showAdminPage()(addToken(fakeRequestWithSession))
+      private val result = messageBrakeController.showAdminPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
     "return error" in new MessageBrakeControllerTestCase {
       private val fakeRequestWithSession = FakeRequest(routes.MessageBrakeController.showAdminPage()).withSession(User.sessionKey -> "user")
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier], any[ExecutionContext])).thenReturn (Future.successful(Right("error")))
-      private val result = messageBrakeController().showAdminPage()(addToken(fakeRequestWithSession))
+      private val result = messageBrakeController().showAdminPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
   }
@@ -111,7 +115,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
       when(mockMessageService.getRandomMessagePreview(ArgumentMatchers.eq(gmcBatch))(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future(Left(mockedBatchMessagePreview)))
-      private val result = messageBrakeController().previewMessage()(addToken(requestWithFormData))
+      private val result = messageBrakeController().previewMessage()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
@@ -120,7 +124,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Right("error")))
       when(mockMessageService.getRandomMessagePreview(ArgumentMatchers.eq(gmcBatch))(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future(Left(mockedBatchMessagePreview)))
-      private val result = messageBrakeController().previewMessage()(addToken(requestWithFormData))
+      private val result = messageBrakeController().previewMessage()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -129,7 +133,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
       when(mockMessageService.getRandomMessagePreview(ArgumentMatchers.eq(gmcBatch))(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future(Right("error")))
-      private val result = messageBrakeController().previewMessage()(addToken(requestWithFormData))
+      private val result = messageBrakeController().previewMessage()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
   }
@@ -141,7 +145,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.approveGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.OK)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
-      private val result = messageBrakeController().confirmApproveBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmApproveBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
@@ -151,7 +155,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.approveGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.BAD_GATEWAY)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
-      private val result = messageBrakeController().confirmApproveBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmApproveBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_REQUEST
     }
 
@@ -160,7 +164,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.approveGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.BAD_GATEWAY)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
-      private val result = messageBrakeController().confirmApproveBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmApproveBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -169,7 +173,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.approveGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.OK)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Right("error")))
-      private val result = messageBrakeController().confirmApproveBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmApproveBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
   }
@@ -181,7 +185,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.rejectGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.OK)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
-      private val result = messageBrakeController().confirmRejectBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmRejectBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
@@ -191,7 +195,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.approveGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.BAD_GATEWAY)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
-      private val result = messageBrakeController().confirmRejectBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmRejectBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_REQUEST
     }
 
@@ -200,7 +204,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.rejectGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.BAD_GATEWAY)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Left(Seq(gmcBatch))))
-      private val result = messageBrakeController().confirmRejectBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmRejectBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -209,7 +213,7 @@ class MessageBrakeControllerSpec extends UnitSpec
       when(mockMessageConnector.rejectGmcBatch(ArgumentMatchers.eq(gmcBatchApproval))(any[HeaderCarrier]))
         .thenReturn(Future(HttpResponse(Status.OK)))
       when(mockMessageService.getGmcBatches()(any[HeaderCarrier],any[ExecutionContext])).thenReturn(Future.successful(Right("error")))
-      private val result = messageBrakeController().confirmRejectBatch()(addToken(requestWithFormData))
+      private val result = messageBrakeController().confirmRejectBatch()(requestWithFormData.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
   }
@@ -218,11 +222,14 @@ class MessageBrakeControllerSpec extends UnitSpec
 
 trait MessageBrakeControllerTestCase extends SpecBase with MockitoSugar {
 
-  val mockMessageConnector: MessageConnector = mock[MessageConnector]
+    implicit val stubbedMCC: MessagesControllerComponents = stubMessagesControllerComponents()
+    implicit val ecc: ExecutionContext = stubbedMCC.executionContext
+   val mockMessageConnector: MessageConnector = mock[MessageConnector]
 
   val mockMessageService: MessageService = mock[MessageService]
 
-  def messageBrakeController()(implicit messages: MessagesApi):MessageBrakeController = new MessageBrakeController(mockMessageConnector, mockMessageService)
+
+    def messageBrakeController()(implicit messages: MessagesApi, appConfig: AppConfig):MessageBrakeController = new MessageBrakeController(mockMessageConnector, mockMessageService, stubbedMCC)
 
   def getRequestWithFormData(routeCall: Call): FakeRequest[AnyContentAsFormUrlEncoded] = {
     val fakeRequestWithSession = FakeRequest(routeCall).withSession(User.sessionKey -> "user")

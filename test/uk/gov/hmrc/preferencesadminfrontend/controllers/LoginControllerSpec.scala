@@ -25,26 +25,27 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http._
 import play.api.i18n.MessagesApi
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
-import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
+import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.Future
 
 class LoginControllerSpec
   extends LoginControllerFixtures
-    with ScalaFutures
-    with CSRFTest {
+    with ScalaFutures {
 
   "GET /" should {
     "return 200" in {
-      val result = loginController.showLoginPage(addToken(FakeRequest("GET", "/")))
+      val result = loginController.showLoginPage(FakeRequest("GET", "/").withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
     "return HTML" in {
-      val result = loginController.showLoginPage(addToken(FakeRequest("GET", "/")))
+      val result = loginController.showLoginPage(FakeRequest("GET", "/").withCSRFToken)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
     }
@@ -52,12 +53,11 @@ class LoginControllerSpec
 
   "POST to login" should {
     "Redirect to the next page if credentials are correct" in {
-      val result = loginController.login(
-        addToken(FakeRequest()).withFormUrlEncodedBody(
+        val result = loginController.login( FakeRequest().withFormUrlEncodedBody(
           "username" -> "user",
           "password" -> "pwd"
-        )
-      )
+        ).withCSRFToken
+    )
 
       session(result).data should contain ("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
@@ -66,10 +66,10 @@ class LoginControllerSpec
 
     "Return unauthorised if credentials are not correct" in {
       val result = loginController.login(
-        addToken(FakeRequest()).withFormUrlEncodedBody(
+        FakeRequest().withFormUrlEncodedBody(
           "username" -> "user",
           "password" -> "wrongPassword"
-        )
+          ).withCSRFToken
       )
 
       result.futureValue.header.status shouldBe Status.UNAUTHORIZED
@@ -77,7 +77,7 @@ class LoginControllerSpec
 
     "Return bad request if credentials are missing" in {
       val result = loginController.login(
-        addToken(FakeRequest()).withFormUrlEncodedBody()
+        FakeRequest().withFormUrlEncodedBody().withCSRFToken
       )
 
       result.futureValue.header.status shouldBe Status.BAD_REQUEST
@@ -86,7 +86,7 @@ class LoginControllerSpec
 
   "POST to logout" should {
     "Destroy existing session and redirect to login page" in {
-      val result = loginController.logout(addToken(FakeRequest().withSession("userId" -> "user")))
+      val result = loginController.logout(FakeRequest().withSession("userId" -> "user").withCSRFToken)
 
       session(result).data should not contain ("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
@@ -96,6 +96,7 @@ class LoginControllerSpec
 }
 
 trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite with SpecBase {
+  override implicit lazy val app = GuiceApplicationBuilder().build()
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
   val loginController = app.injector.instanceOf[LoginController]

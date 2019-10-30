@@ -17,37 +17,20 @@
 package uk.gov.hmrc.preferencesadminfrontend.utils
 
 import org.mockito.ArgumentMatcher
-import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
-import play.api.Configuration
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.preferencesadminfrontend.config.FrontendAppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{EntityResolverConnector, MessageConnector, PreferencesConnector}
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.services.RescindmentService
-
-import scala.concurrent.Future
 
 trait SpecBase extends MockitoSugar {
 
-  implicit val appConfig = mock[FrontendAppConfig]
   implicit val user = User("me", "mySecretPassword")
-
-  when(appConfig.analyticsToken).thenReturn("")
-  when(appConfig.analyticsHost).thenReturn("")
 
   val auditConnectorMock = mock[AuditConnector]
   val entityResolverConnectorMock = mock[EntityResolverConnector]
   val preferencesConnectorMock = mock[PreferencesConnector]
   val messageConnectorMock = mock[MessageConnector]
-
-  val appName = new AppName {
-    protected def appNameConfiguration: Configuration = ???
-
-    override def appName: String = "preferences-admin-frontend"
-  }
 
   def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
     new ArgumentMatcher[MergedDataEvent]() {

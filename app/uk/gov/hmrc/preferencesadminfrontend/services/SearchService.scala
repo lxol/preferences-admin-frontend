@@ -18,19 +18,23 @@ package uk.gov.hmrc.preferencesadminfrontend.services
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
+import play.api.Configuration
 import play.api.libs.json.Json
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent}
-import uk.gov.hmrc.play.config.AppName
+import uk.gov.hmrc.play.bootstrap.config.AppName
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
-class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, preferencesConnector: PreferencesConnector, auditConnector: AuditConnector, appName: AppName) {
+class SearchService @Inject()(entityResolverConnector: EntityResolverConnector,
+                              preferencesConnector: PreferencesConnector,
+                              auditConnector: AuditConnector,
+                              config: Configuration ) {
 
   def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
     val preferences = if(taxId.name.equals("email")) getPreferences(taxId) else getPreference(taxId)
@@ -96,7 +100,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
     )
 
     MergedDataEvent(
-      auditSource = appName.appName,
+      auditSource = AppName.fromConfiguration(config),
       auditType = if (optOutResult == OptedOut) "TxSucceeded" else "TxFailed",
       request = DataCall(
         tags = Map("transactionName" -> "Manual opt out from paperless"),
@@ -121,7 +125,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector, 
     )
 
     MergedDataEvent(
-      auditSource = appName.appName,
+      auditSource = AppName.fromConfiguration(config),
       auditType = "TxSucceeded",
       request = DataCall(
         tags = Map("transactionName" -> "Paperless opt out search"),

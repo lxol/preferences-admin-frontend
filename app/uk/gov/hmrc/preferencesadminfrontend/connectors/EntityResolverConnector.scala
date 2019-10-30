@@ -16,49 +16,30 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.connectors
 
-import akka.actor.ActorSystem
-import com.typesafe.config.Config
 import javax.inject.{Inject, Singleton}
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.Mode.Mode
-import play.api.{Configuration, Environment, Logger, Play}
+import play.api.Logger
 import play.api.http.Status
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, EntityId, TaxIdentifier}
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
-import uk.gov.hmrc.play.audit.http.HttpAuditing
-import uk.gov.hmrc.play.config.AppName
-
 import scala.util.Try
 
 @Singleton
-class EntityResolverConnector @Inject()(frontendAuditConnector: FrontendAuditConnector,
-                                        environment: Environment,
-                                        val runModeConfiguration: Configuration,
-                                        val actorSystem: ActorSystem) extends HttpGet with WSGet
-  with HttpPost with WSPost with HttpAuditing with AppName with ServicesConfig {
+class EntityResolverConnector @Inject()( http: DefaultHttpClient,
+                                        val servicesConfig: ServicesConfig) {
 
   implicit val ef = Entity.formats
 
-  override protected def mode: Mode = environment.mode
-  override def appNameConfiguration: Configuration = Play.current.configuration
-  override lazy val configuration: Option[Config] = None
-
-  val hooks: Seq[HttpHook] = Seq()
-
-  override val auditConnector = frontendAuditConnector
-
-  def serviceUrl = baseUrl("entity-resolver")
+  def serviceUrl = servicesConfig.baseUrl("entity-resolver")
 
   def getTaxIdentifiers(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
-    val response = GET[Option[Entity]](s"$serviceUrl/entity-resolver/${taxId.regime}/${taxId.value}")
+    val response = http.GET[Option[Entity]](s"$serviceUrl/entity-resolver/${taxId.regime}/${taxId.value}")
     response.map(
       _.fold(Seq.empty[TaxIdentifier])(entity =>
         Seq(
@@ -67,11 +48,13 @@ class EntityResolverConnector @Inject()(frontendAuditConnector: FrontendAuditCon
         ).flatten)
     ).recover {
       case ex: BadRequestException => Seq.empty
+      case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) => Seq.empty
+      case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) => Seq.empty
     }
   }
 
-  def getTaxIdentifiers(preferenceDetails: PreferenceDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
-      val response = GET[Option[Entity]](s"$serviceUrl/entity-resolver/${preferenceDetails.entityId.get}")
+    def getTaxIdentifiers(preferenceDetails: PreferenceDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[TaxIdentifier]] = {
+      val response = http.GET[Option[Entity]](s"$serviceUrl/entity-resolver/${preferenceDetails.entityId.get}")
       response.map(
         _.fold(Seq.empty[TaxIdentifier])(entity =>
           Seq(
@@ -80,13 +63,16 @@ class EntityResolverConnector @Inject()(frontendAuditConnector: FrontendAuditCon
           ).flatten)
       ).recover {
         case ex: BadRequestException => Seq.empty
+        case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) => Seq.empty
+        case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) => Seq.empty
       }
   }
 
-
   def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[PreferenceDetails]] = {
-    GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {
+    http.GET[Option[PreferenceDetails]](s"$serviceUrl/portal/preferences/${taxId.regime}/${taxId.value}").recover {
       case ex: BadRequestException => None
+      case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) => None
+      case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) => None
     }
   }
 
@@ -94,7 +80,7 @@ class EntityResolverConnector @Inject()(frontendAuditConnector: FrontendAuditCon
 
     def warnNotOptedOut(status: Int) = Logger.warn(s"Unable to manually opt-out ${taxId.name} user with id ${taxId.value}. Status: $status")
 
-    POSTEmpty(s"$serviceUrl/entity-resolver-admin/manual-opt-out/${taxId.regime}/${taxId.value}")
+    http.POSTEmpty(s"$serviceUrl/entity-resolver-admin/manual-opt-out/${taxId.regime}/${taxId.value}")
       .map(_ => OptedOut)
       .recover {
         case ex: NotFoundException =>
@@ -103,6 +89,9 @@ class EntityResolverConnector @Inject()(frontendAuditConnector: FrontendAuditCon
         case ex@Upstream4xxResponse(_, Status.CONFLICT, _, _) =>
           warnNotOptedOut(ex.upstreamResponseCode)
           AlreadyOptedOut
+        case ex@Upstream4xxResponse(_, Status.NOT_FOUND, _, _) =>
+            warnNotOptedOut(ex.upstreamResponseCode)
+            PreferenceNotFound
         case ex@Upstream4xxResponse(_, Status.PRECONDITION_FAILED, _, _) =>
           warnNotOptedOut(ex.upstreamResponseCode)
           PreferenceNotFound
@@ -144,7 +133,10 @@ object PreferenceDetails {
       }
     }
   }
-
+  implicit val dateFormatDefault = new Format[DateTime] {
+      override def reads(json: JsValue): JsResult[DateTime] = JodaReads.DefaultJodaDateTimeReads.reads(json)
+      override def writes(o: DateTime): JsValue = JodaWrites.JodaDateTimeNumberWrites.writes(o)
+  }
   implicit val reads: Reads[PreferenceDetails] = (
     (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(false)(m => (m \ "accepted").as[Boolean])) and
     (JsPath \ "termsAndConditions" \ "generic").readNullable[JsValue].map(_.fold(None: Option[DateTime])(m => (m \ "updatedAt").asOpt[DateTime])) and

@@ -17,27 +17,24 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-
-import play.api.{Configuration, Play}
-import play.api.data.Form
-import play.api.data.Forms.{mapping, text}
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.{I18nSupport, Messages}
+import play.api.mvc.MessagesControllerComponents
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.{AlreadyOptedOut, OptedOut, PreferenceNotFound}
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.{OptOutReason, Search}
 import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SearchController @Inject()(auditConnector: AuditConnector, searchService: SearchService)
-                                (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with AppName with I18nSupport {
-
-  def appNameConfiguration: Configuration = Play.current.configuration
+class SearchController @Inject()(auditConnector: AuditConnector,
+                                 searchService: SearchService,
+                                 mcc: MessagesControllerComponents
+                                )
+                                (implicit appConfig: AppConfig, ec: ExecutionContext) extends FrontendController(mcc)  with I18nSupport {
 
   def showSearchPage(taxIdentifierName: String, taxIdentifierValue: String) = AuthorisedAction.async {
     implicit request =>
@@ -70,7 +67,7 @@ class SearchController @Inject()(auditConnector: AuditConnector, searchService: 
           errors => {
             searchService.getPreference(identifier).map {
               case Nil =>
-                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", "error.preference_not_found")))
+                Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.customer_identification(Search().bindFromRequest.withError("value", Messages("error.preference_not_found"))))
               case preferences =>
                 Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.user_opt_out(errors, identifier, preferences))
             }

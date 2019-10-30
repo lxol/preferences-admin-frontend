@@ -17,20 +17,21 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.Inject
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.I18nSupport
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent}
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
-import uk.gov.hmrc.preferencesadminfrontend.model.{Whitelist, WhitelistEntry}
 import uk.gov.hmrc.preferencesadminfrontend.model.Whitelist._
+import uk.gov.hmrc.preferencesadminfrontend.model.{Whitelist, WhitelistEntry}
 import uk.gov.hmrc.preferencesadminfrontend.views.html.{error_template, whitelist_add, whitelist_show}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class WhitelistController @Inject()(messageConnector: MessageConnector)
-                                   (implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {
+class WhitelistController @Inject()(messageConnector: MessageConnector,
+                                   mcc: MessagesControllerComponents )
+                                   (implicit appConfig: AppConfig, ec:ExecutionContext) extends FrontendController(mcc) with I18nSupport {
 
   def showWhitelistPage: Action[AnyContent] = AuthorisedAction.async {
     implicit request =>

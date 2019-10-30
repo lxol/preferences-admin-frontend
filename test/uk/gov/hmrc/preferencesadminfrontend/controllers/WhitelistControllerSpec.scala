@@ -19,33 +19,44 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 import akka.stream.Materializer
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
-import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
 import play.api.libs.json.Json
-import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson}
+import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, MessagesControllerComponents}
+import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.config.ControllerConfig
+import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.WhitelistEntry
-import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
+import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with SpecBase with CSRFTest {
 
-  implicit val messagesApi: MessagesApi = app.injector.instanceOf[MessagesApi]
+class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with SpecBase {
+    ControllerConfig.fromConfig(Configuration())
+    val injector = app.injector
 
-  implicit lazy val materializer: Materializer = app.materializer
+    implicit lazy val materializer: Materializer = app.materializer
+    implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
+
+    implicit val messagesApi: MessagesApi = app.injector.instanceOf[MessagesApi]
 
   implicit lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
 
   implicit val hc: HeaderCarrier = mock[HeaderCarrier]
+
+  app.injector.instanceOf[Configuration]         should not be (null)
 
   "showWhitelistPage" should {
 
@@ -62,7 +73,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.OK,Some(whitelistJson))
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithSession))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
@@ -79,7 +90,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.OK,Some(whitelistJson))
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithSession))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
@@ -96,7 +107,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.OK,Some(whitelistJson))
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithSession))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -107,7 +118,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.NOT_FOUND)
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithForm))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithForm.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -131,7 +142,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.CREATED)
         )
       )
-      private val result = whitelistController.confirmAdd()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmAdd()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.SEE_OTHER
     }
 
@@ -151,7 +162,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.NOT_FOUND)
         )
       )
-      private val result = whitelistController.confirmAdd()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmAdd()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -165,7 +176,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
             |}
           """.stripMargin)
       )
-      private val result = whitelistController.confirmAdd()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmAdd()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_REQUEST
     }
   }
@@ -188,7 +199,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.OK)
         )
       )
-      private val result = whitelistController.confirmDelete()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmDelete()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.SEE_OTHER
     }
 
@@ -208,7 +219,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
           HttpResponse(Http.Status.NOT_FOUND)
         )
       )
-      private val result = whitelistController.confirmDelete()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmDelete()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -222,7 +233,7 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
             |}
           """.stripMargin)
       )
-      private val result = whitelistController.confirmDelete()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmDelete()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_REQUEST
     }
   }
@@ -230,9 +241,13 @@ class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar w
 }
 
 trait WhitelistControllerTestCase extends SpecBase with MockitoSugar {
+    implicit val stubbedMCC: MessagesControllerComponents = stubMessagesControllerComponents()
+    implicit val ecc: ExecutionContext = stubbedMCC.executionContext
 
-  val mockMessageConnector: MessageConnector = mock[MessageConnector]
 
-  def whitelistController()(implicit messages: MessagesApi):WhitelistController = new WhitelistController(mockMessageConnector)
+
+    val mockMessageConnector: MessageConnector = mock[MessageConnector]
+
+    def whitelistController()(implicit messages: MessagesApi, appConfig:AppConfig):WhitelistController = new WhitelistController(mockMessageConnector, stubbedMCC)
 
 }
