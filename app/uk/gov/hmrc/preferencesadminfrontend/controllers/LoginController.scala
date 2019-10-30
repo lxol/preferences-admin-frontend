@@ -17,34 +17,43 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-
+import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.I18nSupport
 import play.api.mvc._
+import uk.gov.hmrc.http.{HeaderCarrier, SessionKeys}
+import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.play.config.AppName
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.config.AppName
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.services.LoginService
 import uk.gov.hmrc.time.DateTimeUtils
 
-import scala.concurrent.Future
-import uk.gov.hmrc.http.SessionKeys
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class LoginController @Inject()(loginService: LoginService, auditConnector: AuditConnector, appName: AppName)(implicit appConfig: AppConfig, val messagesApi: MessagesApi) extends FrontendController with I18nSupport {
+class LoginController @Inject()(loginService: LoginService,
+                                auditConnector: AuditConnector,
+                                config: Configuration,
+                                mcc:MessagesControllerComponents )(implicit appConfig: AppConfig, ec: ExecutionContext) extends FrontendController(mcc) with I18nSupport {
 
   val showLoginPage = Action.async {
+
     implicit request =>
-      val sessionUpdated = request.session + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
+        implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers)
+
+        val sessionUpdated = request.session + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
       Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)).withSession(sessionUpdated))
   }
 
   val login = Action.async { implicit request =>
-    userForm.bindFromRequest.fold(
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers)
+
+      userForm.bindFromRequest.fold(
       formWithErrors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors))),
       userData => {
         if (loginService.isAuthorised(userData)) {
@@ -62,19 +71,20 @@ class LoginController @Inject()(loginService: LoginService, auditConnector: Audi
   }
 
   val logout = AuthorisedAction.async { implicit request => user =>
-    auditConnector.sendEvent(createLogoutEvent(user.username))
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers)
+      auditConnector.sendEvent(createLogoutEvent(user.username))
     Future.successful(Redirect(routes.LoginController.showLoginPage()).withSession(Session()))
   }
 
   def createLoginEvent(username: String, successful: Boolean) = DataEvent(
-    auditSource = appName.appName,
+    auditSource = AppName.fromConfiguration(config),
     auditType = if (successful) "TxSucceeded" else "TxFailed",
     detail = Map("user" -> username),
     tags = Map("transactionName" -> "Login")
   )
 
   def createLogoutEvent(username: String) = DataEvent(
-    auditSource = appName.appName,
+    auditSource = AppName.fromConfiguration(config),
     auditType = "TxSucceeded",
     detail = Map("user" -> username),
     tags = Map("transactionName" -> "Logout")

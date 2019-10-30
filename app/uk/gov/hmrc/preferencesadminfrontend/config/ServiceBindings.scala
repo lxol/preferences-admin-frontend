@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.preferencesadminfrontend.config.filters
+package uk.gov.hmrc.preferencesadminfrontend.config
 
-import javax.inject.Singleton
+import play.api.inject.{Binding, Module}
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.preferencesadminfrontend.config.filters.PreferencesFrontendAuditFilter
 
-import com.google.inject.Inject
-import play.api.http.DefaultHttpFilters
-import uk.gov.hmrc.play.frontend.bootstrap.FrontendFilters
+class ServiceBindings extends Module {
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
+    bindFilters
 
-@Singleton
-class MicroserviceFilters @Inject()(frontendFilters: FrontendFilters) extends DefaultHttpFilters(frontendFilters.frontendFilters:_*)
+  private def bindFilters: Seq[Binding[_]] = Seq(
+    bind[PreferencesFrontendAuditFilter].toSelf.eagerly())
+
+}

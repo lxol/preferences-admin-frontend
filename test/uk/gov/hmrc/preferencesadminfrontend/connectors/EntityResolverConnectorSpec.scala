@@ -16,18 +16,18 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.connectors
 
-import akka.actor.ActorSystem
 import org.joda.time.{DateTime, DateTimeZone}
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status
 import play.api.libs.json._
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, Upstream4xxResponse}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.FrontendAuditConnector
 import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, TaxIdentifier}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,22 +36,24 @@ import scala.util.Random
 
 class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
+  def entityResolverserviceUrl = app.injector.instanceOf[ServicesConfig].baseUrl("entity-resolver")
+
   "getTaxIdentifiers" should {
     "return only sautr if nino does not exist" in new TestCase {
-      val expectedPath = s"/entity-resolver/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver/sa/${sautr.value}"
       val responseJson = taxIdentifiersResponseFor(sautr)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getTaxIdentifiers(sautr).futureValue
+      val result = entityConnectorGetEntityMock(expectedPath, responseJson).getTaxIdentifiers(sautr).futureValue
 
       result.size shouldBe (1)
       result should contain(sautr)
     }
 
     "return all tax identifiers for sautr" in new TestCase {
-      val expectedPath = s"/entity-resolver/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver/sa/${sautr.value}"
       val responseJson = taxIdentifiersResponseFor(sautr, nino)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getTaxIdentifiers(sautr).futureValue
+      val result = entityConnectorGetEntityMock(expectedPath, responseJson).getTaxIdentifiers(sautr).futureValue
 
       result.size shouldBe (2)
       result should contain(nino)
@@ -59,10 +61,10 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return all tax identifiers for nino" in new TestCase {
-      val expectedPath = s"/entity-resolver/paye/${nino.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver/paye/${nino.value}"
       val responseJson = taxIdentifiersResponseFor(sautr, nino)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getTaxIdentifiers(nino).futureValue
+      val result = entityConnectorGetEntityMock(expectedPath, responseJson).getTaxIdentifiers(nino).futureValue
 
       result.size shouldBe (2)
       result should contain(nino)
@@ -70,15 +72,16 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return empty sequence" in new TestCase {
-      val expectedPath = s"/entity-resolver/paye/${nino.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver/paye/${nino.value}"
 
-      val result = entityConnectorGetMock(expectedPath, emptyJson, Status.NOT_FOUND).getTaxIdentifiers(nino).futureValue
+      val result = entityConnectorGetMock(expectedPath, new Upstream4xxResponse("", Status.CONFLICT, Status.CONFLICT))
+          .getTaxIdentifiers(nino).futureValue
 
       result.size shouldBe (0)
     }
 
     "return empty sequence  if Entity-Resolver cannot parse parameter" in new TestCase {
-      val expectedPath = s"/entity-resolver/paye/${nino.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver/paye/${nino.value}"
       val error = new BadRequestException(message =s"""'{"statusCode":400,"message":"Cannot parse parameter '${nino.name}' with value '${nino.value}'"}'""")
 
       val result = entityConnectorGetMock(expectedPath, error).getTaxIdentifiers(nino).futureValue
@@ -91,10 +94,10 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     val verfiedOn = Some(new DateTime(2018, 2, 15, 0, 0, DateTimeZone.UTC))
 
     "return generic paperless preference true and valid email address and verification true if user is opted in for saUtr" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseForGenericOptedIn(true)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
+      val result = entityConnectorGetPreferenceDetailsMock(expectedPath, responseJson).getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
       result.get.genericPaperless shouldBe true
@@ -105,10 +108,10 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/paye/${nino.value}"
       val responseJson = preferenceDetailsResponseForTaxCreditsOptedIn(emailVerified = true)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
+      val result = entityConnectorGetPreferenceDetailsMock(expectedPath, responseJson).getPreferenceDetails(nino).futureValue
 
       result shouldBe defined
       result.get.genericPaperless shouldBe false
@@ -119,10 +122,10 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return taxCredits paperless preference true and valid email address and verification true if a Nino user is opted in for taxCredits and Generic" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/paye/${nino.value}"
       val responseJson = preferenceDetailsResponseForBothOptedIn(emailVerified = true)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
+      val result = entityConnectorGetPreferenceDetailsMock(expectedPath, responseJson).getPreferenceDetails(nino).futureValue
 
       result shouldBe defined
       result.get.genericPaperless shouldBe true
@@ -133,10 +136,10 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return generic paperless preference true and valid email address and verification false if user is opted in for saUtr" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseForGenericOptedIn(false)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
+      val result = entityConnectorGetPreferenceDetailsMock(expectedPath, responseJson).getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
       result.get.genericPaperless shouldBe true
@@ -145,10 +148,10 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return generic paperless preference false and email as 'None' if user is opted out for saUtr" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/sa/${sautr.value}"
       val responseJson = preferenceDetailsResponseForOptedOut()
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(sautr).futureValue
+      val result = entityConnectorGetPreferenceDetailsMock(expectedPath, responseJson).getPreferenceDetails(sautr).futureValue
 
       result shouldBe defined
       result.get.genericPaperless shouldBe false
@@ -157,10 +160,10 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return email address and verification if user is opted in for nino" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/paye/${nino.value}"
       val responseJson = preferenceDetailsResponseForGenericOptedIn(true)
 
-      val result = entityConnectorGetMock(expectedPath, responseJson, Status.OK).getPreferenceDetails(nino).futureValue
+      val result = entityConnectorGetPreferenceDetailsMock(expectedPath, responseJson).getPreferenceDetails(nino).futureValue
 
       result shouldBe defined
       result.get.genericPaperless shouldBe true
@@ -171,15 +174,15 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
     }
 
     "return None if taxId does not exist" in new TestCase {
-      val expectedPath = s"/portal/preferences/sa/${sautr.value}"
-
-      val result = entityConnectorGetMock(expectedPath, emptyJson, Status.NOT_FOUND).getPreferenceDetails(sautr).futureValue
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/sa/${sautr.value}"
+      val error =  new Upstream4xxResponse("",  Status.NOT_FOUND, Status.NOT_FOUND)
+      val result = entityConnectorGetMock(expectedPath, error).getPreferenceDetails(sautr).futureValue
 
       result should not be defined
     }
 
     "return None if taxId is malformed" in new TestCase {
-      val expectedPath = s"/portal/preferences/paye/${nino.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/portal/preferences/paye/${nino.value}"
       val error = new BadRequestException(message =s"""'{"statusCode":400,"message":"Cannot parse parameter '${nino.name}' with value '${nino.value}'"}'""")
 
       val result = entityConnectorGetMock(expectedPath, error).getPreferenceDetails(nino).futureValue
@@ -190,33 +193,35 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
   "optOut" should {
     "return true if status is OK (user is opted out)" in new TestCase {
-      val expectedPath = s"/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
 
-      val result = entityConnectorPostMock(expectedPath, emptyJson, Status.OK).optOut(sautr).futureValue
+      val result = entityConnectorPostMock(expectedPath, emptyJson).optOut(sautr).futureValue
 
       result shouldBe OptedOut
     }
 
     "return false if CONFLICT" in new TestCase {
-      val expectedPath = s"/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
 
-      val result = entityConnectorPostMock(expectedPath, emptyJson, Status.CONFLICT).optOut(sautr).futureValue
+      val error =  new Upstream4xxResponse("",  Status.CONFLICT, Status.CONFLICT)
+      val result = entityConnectorPostMock(expectedPath, error).optOut(sautr).futureValue
 
       result shouldBe AlreadyOptedOut
     }
 
     "return false if NOT_FOUND" in new TestCase {
-      val expectedPath = s"/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
 
-      val result = entityConnectorPostMock(expectedPath, emptyJson, Status.NOT_FOUND).optOut(sautr).futureValue
+      val error =  new Upstream4xxResponse("",  Status.NOT_FOUND, Status.NOT_FOUND)
+      val result = entityConnectorPostMock(expectedPath, error).optOut(sautr).futureValue
 
       result shouldBe PreferenceNotFound
     }
 
     "return false if PRECONDITION_FAILED" in new TestCase {
-      val expectedPath = s"/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
-
-      val result = entityConnectorPostMock(expectedPath, emptyJson, Status.PRECONDITION_FAILED).optOut(sautr).futureValue
+      val expectedPath = s"${entityResolverserviceUrl}/entity-resolver-admin/manual-opt-out/sa/${sautr.value}"
+      val error =  new Upstream4xxResponse("",  Status.PRECONDITION_FAILED, Status.PRECONDITION_FAILED)
+      val result = entityConnectorPostMock(expectedPath, error).optOut(sautr).futureValue
 
       result shouldBe PreferenceNotFound
     }
@@ -229,45 +234,48 @@ class EntityResolverConnectorSpec extends UnitSpec with ScalaFutures with GuiceO
 
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
-    lazy val environment = app.injector.instanceOf[Environment]
-    lazy val configuration = app.injector.instanceOf[Configuration]
-    lazy val frontendAuditConnector = app.injector.instanceOf[FrontendAuditConnector]
-    lazy val actorSystem = app.injector.instanceOf[ActorSystem]
-    lazy val mockResponse = mock[HttpResponse]
+    lazy val mockServicesConfig:ServicesConfig = mock[ServicesConfig]
+
+    lazy val mockResponse = mock[Option[Entity]]
     val emptyJson = Json.obj()
+    implicit val ef = Entity.formats
 
+    lazy val servicesConfig = app.injector.instanceOf[ServicesConfig]
+    def entityConnectorGetEntityMock(expectedPath: String, jsonBody: JsValue): EntityResolverConnector = {
+      val mockHttp: DefaultHttpClient = mock[DefaultHttpClient]
+      when(mockHttp.GET[Option[Entity]](ArgumentMatchers.eq(expectedPath))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+         .thenReturn(Future.successful(Some(jsonBody.as[Entity])))
+       new EntityResolverConnector(mockHttp, servicesConfig)
+    }
 
-    def entityConnectorGetMock(expectedPath: String, jsonBody: JsValue, status: Int): EntityResolverConnector = {
-      new EntityResolverConnector(frontendAuditConnector, environment, configuration, actorSystem) {
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          when(mockResponse.json).thenReturn(jsonBody)
-          when(mockResponse.status).thenReturn(status)
-          Future.successful(mockResponse)
-        }
-      }
+    def entityConnectorGetPreferenceDetailsMock(expectedPath: String, jsonBody: JsValue): EntityResolverConnector = {
+        val mockHttp: DefaultHttpClient = mock[DefaultHttpClient]
+        when(mockHttp.GET[Option[PreferenceDetails]](ArgumentMatchers.eq(expectedPath))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(Future.successful(Some(jsonBody.as[PreferenceDetails])))
+        new EntityResolverConnector(mockHttp, servicesConfig)
     }
 
     def entityConnectorGetMock(expectedPath: String, error: Throwable): EntityResolverConnector = {
-      new EntityResolverConnector(frontendAuditConnector, environment, configuration, actorSystem) {
-        override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          Future.failed(error)
-        }
-      }
+      val mockHttp: DefaultHttpClient = mock[DefaultHttpClient]
+      when(mockHttp.GET(ArgumentMatchers.eq(expectedPath))(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(error))
+      new EntityResolverConnector(mockHttp, servicesConfig)
     }
 
-    def entityConnectorPostMock(expectedPath: String, jsonBody: JsValue, status: Int): EntityResolverConnector = {
-      new EntityResolverConnector(frontendAuditConnector, environment, configuration, actorSystem) {
-        override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-          url should include(expectedPath)
-          when(mockResponse.json).thenReturn(jsonBody)
-          when(mockResponse.status).thenReturn(status)
-          Future.successful(mockResponse)
-        }
-      }
+    def  entityConnectorPostMock(expectedPath: String, jsonBody: JsValue): EntityResolverConnector = {
+      lazy val mockResponse = mock[HttpResponse]
+      val mockHttp: DefaultHttpClient = mock[DefaultHttpClient]
+      when(mockHttp.POSTEmpty[HttpResponse](ArgumentMatchers.eq(expectedPath), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(mockResponse))
+      new EntityResolverConnector(mockHttp, servicesConfig)
     }
 
+    def entityConnectorPostMock(expectedPath: String, error: Throwable): EntityResolverConnector = {
+        val mockHttp: DefaultHttpClient = mock[DefaultHttpClient]
+        when(mockHttp.POSTEmpty(ArgumentMatchers.eq(expectedPath), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(Future.failed(error))
+        new EntityResolverConnector(mockHttp, servicesConfig)
+    }
 
     def taxIdentifiersResponseFor(taxIds: TaxIdentifier*) = {
       val taxIdsJson: Seq[(String, JsValue)] = taxIds.map {

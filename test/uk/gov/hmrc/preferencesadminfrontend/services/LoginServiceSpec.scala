@@ -17,7 +17,8 @@
 package uk.gov.hmrc.preferencesadminfrontend.services
 
 import org.scalatest.mockito.MockitoSugar
-import play.api.{Configuration, Environment}
+import play.api.{Configuration, Mode}
+import uk.gov.hmrc.play.bootstrap.config.RunMode
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
@@ -47,7 +48,9 @@ class LoginServiceSpec extends UnitSpec with MockitoSugar {
   }
 
   trait TestCase {
-    val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], mock[Environment]){
+
+    val testRunMode = new RunMode(Configuration.empty, Mode.Test)
+    val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], testRunMode){
       override lazy val authorisedUsers: Seq[User] = Seq(User("username", "password"))
     }
   }
