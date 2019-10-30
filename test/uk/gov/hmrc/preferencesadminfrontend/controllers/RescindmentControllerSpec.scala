@@ -28,6 +28,7 @@ import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
 import play.api.mvc.{AnyContentAsFormUrlEncoded, MessagesControllerComponents}
+import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{headers, _}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -38,11 +39,11 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
 import uk.gov.hmrc.preferencesadminfrontend.services._
-import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
+import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures with GuiceOneAppPerSuite {
+class RescindmentControllerSpec extends UnitSpec  with ScalaFutures with GuiceOneAppPerSuite {
   implicit val hc = HeaderCarrier()
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   implicit val materializer = app.injector.instanceOf[Materializer]
@@ -52,13 +53,13 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
 
   "showRescindmentPage" should {
     "return ok if session is authorised" in new RescindmentTestCase {
-      val result = rescindmentController.showRescindmentPage()(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+      val result = rescindmentController.showRescindmentPage()(FakeRequest().withSession(User.sessionKey -> "user").withCSRFToken)
 
       status(result) shouldBe Status.OK
     }
 
     "redirect to login page if not authorised" in new RescindmentTestCase {
-      val result = rescindmentController.showRescindmentPage()(addToken(FakeRequest().withSession()))
+      val result = rescindmentController.showRescindmentPage()(FakeRequest().withSession().withCSRFToken)
 
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain("Location" -> "/paperless/admin")
@@ -67,13 +68,13 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
 
   "showRescindmentAlertsPage" should {
     "return ok if session is authorised" in new RescindmentTestCase {
-      val result = rescindmentController.showRescindmentAlertsPage()(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+      val result = rescindmentController.showRescindmentAlertsPage()(FakeRequest().withSession(User.sessionKey -> "user").withCSRFToken)
 
       status(result) shouldBe Status.OK
     }
 
     "redirect to login page if not authorised" in new RescindmentTestCase {
-      val result = rescindmentController.showRescindmentAlertsPage()(addToken(FakeRequest().withSession()))
+      val result = rescindmentController.showRescindmentAlertsPage()(FakeRequest().withSession().withCSRFToken)
 
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain("Location" -> "/paperless/admin")
@@ -103,7 +104,7 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
       when(rescindmentServiceMock.addRescindments(ArgumentMatchers.eq(rescindmentRequest))
       (ArgumentMatchers.any[User], ArgumentMatchers.any[HeaderCarrier], ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(rescindmentUpdateResult))
-      val result = rescindmentController.rescindment()(addToken(requestWithFormData))
+      val result = rescindmentController.rescindment()(requestWithFormData.withCSRFToken)
 
       status(result) shouldBe Status.OK
       val document = Jsoup.parse(bodyOf(result).futureValue)
@@ -113,14 +114,14 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
     }
 
     "redirect to login page if not authorised" in new RescindmentTestCase {
-      val result = rescindmentController.rescindment()(addToken(FakeRequest().withSession()))
+      val result = rescindmentController.rescindment()(FakeRequest().withSession().withCSRFToken)
 
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain("Location" -> "/paperless/admin")
     }
 
     "return a 400 BAD_REQUEST when not providing a correct body" in new RescindmentTestCase {
-      val result = rescindmentController.rescindment()(addToken(FakeRequest().withSession(User.sessionKey -> "user")))
+      val result = rescindmentController.rescindment()(FakeRequest().withSession(User.sessionKey -> "user").withCSRFToken)
 
       status(result) shouldBe Status.BAD_REQUEST
     }
@@ -135,7 +136,7 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
       when(rescindmentServiceMock.sendRescindmentAlerts()
       (ArgumentMatchers.any[User], ArgumentMatchers.any[HeaderCarrier], ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(rescindmentAlertsResult))
-      val result = rescindmentController.sendRescindmentAlerts()(addToken(fakeRequestWithForm))
+      val result = rescindmentController.sendRescindmentAlerts()(fakeRequestWithForm.withCSRFToken)
 
       status(result) shouldBe Status.OK
       val document = Jsoup.parse(bodyOf(result).futureValue)
@@ -145,7 +146,7 @@ class RescindmentControllerSpec extends UnitSpec with CSRFTest with ScalaFutures
     }
 
     "redirect to login page if not authorised" in new RescindmentTestCase {
-      val result = rescindmentController.sendRescindmentAlerts()(addToken(FakeRequest().withSession()))
+      val result = rescindmentController.sendRescindmentAlerts()(FakeRequest().withSession().withCSRFToken)
 
       status(result) shouldBe Status.SEE_OTHER
       headers(result) should contain("Location" -> "/paperless/admin")

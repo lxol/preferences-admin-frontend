@@ -17,16 +17,14 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import akka.stream.Materializer
-import com.typesafe.config.ConfigFactory
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
-import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, MessagesControllerComponents}
 import play.api.test.FakeRequest
@@ -34,32 +32,20 @@ import play.api.test.Helpers._
 import play.mvc.Http
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ControllerConfig
+import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
+import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 import uk.gov.hmrc.preferencesadminfrontend.model.WhitelistEntry
-import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
+import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
+import play.api.test.CSRFTokenHelper._
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
-import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 
 
 //class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with SpecBase  {
-    class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with SpecBase with CSRFTest {
+    class WhitelistControllerSpec extends WordSpec with Matchers with MockitoSugar with GuiceOneAppPerSuite with SpecBase {
     ControllerConfig.fromConfig(Configuration())
-    // override implicit lazy val app = new GuiceApplicationBuilder()
-     //   .configure(Configuration(//"play.ws.cache.cacheManagerResource" -> "asdf", "play.ws.cache.cacheManagerURI" -> "asdf",
-        //    "cookie.encryption.key" -> "gvBoGdgzqG1AarzF1LY0zQ==",
-         //       "queryParameter.encryption.key" ->  "fqpLDZ4smuDsekHkrEBlCA==",
-       //"sso.encryption.key" -> "P5xsJ9Nt+quxGZzB4DeLfw==",
-          // "security.headers.filter.enabled" -> false
-
-
-
-
-    //))
-         //.configure(ControllerConfig.fromConfig(Configuration()))
-     //   .build()
     val injector = app.injector
 
     implicit lazy val materializer: Materializer = app.materializer
@@ -89,7 +75,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.OK,Some(whitelistJson))
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithSession))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
@@ -106,7 +92,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.OK,Some(whitelistJson))
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithSession))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.OK
     }
 
@@ -123,7 +109,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.OK,Some(whitelistJson))
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithSession))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithSession.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -134,7 +120,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.NOT_FOUND)
         )
       )
-      private val result = whitelistController.showWhitelistPage()(addToken(fakeRequestWithForm))
+      private val result = whitelistController.showWhitelistPage()(fakeRequestWithForm.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -158,7 +144,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.CREATED)
         )
       )
-      private val result = whitelistController.confirmAdd()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmAdd()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.SEE_OTHER
     }
 
@@ -178,7 +164,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.NOT_FOUND)
         )
       )
-      private val result = whitelistController.confirmAdd()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmAdd()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -192,7 +178,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
             |}
           """.stripMargin)
       )
-      private val result = whitelistController.confirmAdd()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmAdd()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_REQUEST
     }
   }
@@ -215,7 +201,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.OK)
         )
       )
-      private val result = whitelistController.confirmDelete()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmDelete()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.SEE_OTHER
     }
 
@@ -235,7 +221,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
           HttpResponse(Http.Status.NOT_FOUND)
         )
       )
-      private val result = whitelistController.confirmDelete()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmDelete()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_GATEWAY
     }
 
@@ -249,7 +235,7 @@ import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
             |}
           """.stripMargin)
       )
-      private val result = whitelistController.confirmDelete()(addToken(fakeRequestWithBody))
+      private val result = whitelistController.confirmDelete()(fakeRequestWithBody.withCSRFToken)
       status(result) shouldBe Status.BAD_REQUEST
     }
   }
