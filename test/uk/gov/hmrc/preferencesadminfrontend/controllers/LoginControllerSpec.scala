@@ -18,6 +18,8 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import org.scalatest
+import org.scalatest.{Args, ConfigMap, Filter, Outcome, Suite, TestData}
 import org.scalatest.Matchers._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -25,11 +27,14 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http._
 import play.api.i18n.MessagesApi
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.preferencesadminfrontend.utils.{CSRFTest, SpecBase}
 
+import scala.collection.immutable
 import scala.concurrent.Future
 
 class LoginControllerSpec
@@ -52,12 +57,10 @@ class LoginControllerSpec
 
   "POST to login" should {
     "Redirect to the next page if credentials are correct" in {
-      val result = loginController.login(
-        addToken(FakeRequest().withFormUrlEncodedBody(
+        val result = loginController.login( FakeRequest().withFormUrlEncodedBody(
           "username" -> "user",
           "password" -> "pwd"
-        )
-      )
+        ).withCSRFToken
     )
 
       session(result).data should contain ("userId" -> "user")
@@ -67,11 +70,11 @@ class LoginControllerSpec
 
     "Return unauthorised if credentials are not correct" in {
       val result = loginController.login(
-        addToken(FakeRequest().withFormUrlEncodedBody(
+        FakeRequest().withFormUrlEncodedBody(
           "username" -> "user",
           "password" -> "wrongPassword"
-        )
-      ))
+          ).withCSRFToken
+      )
 
       result.futureValue.header.status shouldBe Status.UNAUTHORIZED
     }
@@ -97,6 +100,7 @@ class LoginControllerSpec
 }
 
 trait LoginControllerFixtures extends PlaySpec with MockitoSugar with GuiceOneAppPerSuite with SpecBase {
+  override implicit lazy val app = GuiceApplicationBuilder().build()
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
   val loginController = app.injector.instanceOf[LoginController]

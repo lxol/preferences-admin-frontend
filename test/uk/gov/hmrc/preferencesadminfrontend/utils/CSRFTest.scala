@@ -27,15 +27,15 @@ import scala.language.postfixOps
 trait CSRFTest {
   def addToken[T](fakeRequest: FakeRequest[T])(implicit app: Application) = {
     //val csrfConfig     = app.injector.instanceOf[CSRFConfigProvider].get
-    val csrfFilter     = app.injector.instanceOf[CSRFFilter]
+    //val csrfFilter     = app.injector.instanceOf[CSRFFilter]
     //val token          = csrfFilter.tokenProvider.generateToken
 
-    //fakeRequest
-    //    .copyFakeRequest(tags = fakeRequest
-    //    tags ++ Map(
-    //  Token.NameRequestTag  -> csrfConfig.tokenName,
-    //  Token.RequestTag      -> token
-    //)).withHeaders((csrfConfig.headerName, token))
+   // fakeRequest
+   //     .copyFakeRequest(tags = fakeRequest
+   //     tags ++ Map(
+   //   Token.NameRequestTag  -> csrfConfig.tokenName,
+   //   Token.RequestTag      -> token
+   // )).withHeaders((csrfConfig.headerName, token))
     fakeRequest.withCSRFToken
   }
 }

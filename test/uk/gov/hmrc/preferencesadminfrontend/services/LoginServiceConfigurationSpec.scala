@@ -20,7 +20,9 @@ import com.google.common.base.Charsets
 import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigException.Missing
 import org.scalatest.mockito.MockitoSugar
-import play.api.{Configuration, Environment}
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.{Configuration, Environment, Mode}
+import uk.gov.hmrc.play.bootstrap.config.RunMode
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
@@ -34,7 +36,8 @@ class LoginServiceConfigurationSpec extends UnitSpec {
         "password" -> BaseEncoding.base64().encode(user.password.getBytes(Charsets.UTF_8))
       )
 
-      val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapUser), mockEnvironment)
+      val confForUsers = configurationForUsers(mapUser)
+        val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapUser), testRunMode)
 
       loginServiceConfiguration.authorisedUsers.size shouldBe 1
       loginServiceConfiguration.authorisedUsers shouldBe Seq(user)
@@ -46,14 +49,14 @@ class LoginServiceConfigurationSpec extends UnitSpec {
         "password" -> BaseEncoding.base64().encode(user.password.getBytes(Charsets.UTF_8))
       )
 
-      val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapUser, mapUser), mockEnvironment)
+      val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapUser, mapUser), testRunMode)
 
       loginServiceConfiguration.authorisedUsers.size shouldBe 2
       loginServiceConfiguration.authorisedUsers shouldBe Seq(user,user)
     }
 
     "throw a Missing exception if the users configuration is missing" in new TestCase {
-      val loginServiceConfiguration = new LoginServiceConfiguration(Configuration.from(Map.empty),mockEnvironment)
+      val loginServiceConfiguration = new LoginServiceConfiguration(Configuration.from(Map.empty),testRunMode)
 
       val caught = intercept[Missing](loginServiceConfiguration.authorisedUsers)
       caught.getMessage should include("Property users missing")
@@ -63,7 +66,7 @@ class LoginServiceConfigurationSpec extends UnitSpec {
       val mapConfiguration = Map(
         "password" -> user.password
       )
-      val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapConfiguration), mockEnvironment)
+      val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapConfiguration), testRunMode)
 
       val caught = intercept[Missing](loginServiceConfiguration.authorisedUsers)
       caught.getMessage should include("Property username missing")
@@ -73,7 +76,7 @@ class LoginServiceConfigurationSpec extends UnitSpec {
       val mapConfiguration = Map(
         "username" -> user.username
       )
-      val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapConfiguration), mockEnvironment)
+      val loginServiceConfiguration = new LoginServiceConfiguration(configurationForUsers(mapConfiguration), testRunMode)
 
       val caught = intercept[Missing](loginServiceConfiguration.authorisedUsers)
       caught.getMessage should include("Property password missing")
@@ -84,7 +87,7 @@ class LoginServiceConfigurationSpec extends UnitSpec {
   "verifyConfiguration" should {
 
     "throw a Missing exception if users Seq is empty" in new TestCase {
-      val loginServiceConfiguration = new LoginServiceConfiguration(Configuration.from(Map("Test.users"-> Seq.empty)), mockEnvironment)
+      val loginServiceConfiguration = new LoginServiceConfiguration(Configuration.from(Map("Test.users"-> Seq.empty)), testRunMode)
 
       val caught = intercept[Missing](loginServiceConfiguration.verifyConfiguration())
       caught.getMessage should include("Property users is empty")
@@ -96,6 +99,7 @@ class LoginServiceConfigurationSpec extends UnitSpec {
 
     val user = User("user", "pwd")
     val mockEnvironment = Environment.simple()
+    val testRunMode = new RunMode(Configuration.empty, Mode.Test)
 
     def configurationForUsers(usersMap: Map[String,Any]*) = Configuration.from(Map("Test.users"-> usersMap))
   }

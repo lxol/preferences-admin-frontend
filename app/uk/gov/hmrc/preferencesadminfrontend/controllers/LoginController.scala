@@ -22,7 +22,8 @@ import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
-import uk.gov.hmrc.http.SessionKeys
+import uk.gov.hmrc.http.{HeaderCarrier, SessionKeys}
+import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.bootstrap.config.AppName
@@ -41,13 +42,18 @@ class LoginController @Inject()(loginService: LoginService,
                                 mcc:MessagesControllerComponents )(implicit appConfig: AppConfig, ec: ExecutionContext) extends FrontendController(mcc) with I18nSupport {
 
   val showLoginPage = Action.async {
+
     implicit request =>
-      val sessionUpdated = request.session + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
+        implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers)
+
+        val sessionUpdated = request.session + (SessionKeys.lastRequestTimestamp -> DateTimeUtils.now.getMillis.toString)
       Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.login(userForm)).withSession(sessionUpdated))
   }
 
   val login = Action.async { implicit request =>
-    userForm.bindFromRequest.fold(
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers)
+
+      userForm.bindFromRequest.fold(
       formWithErrors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.login(formWithErrors))),
       userData => {
         if (loginService.isAuthorised(userData)) {
@@ -65,7 +71,8 @@ class LoginController @Inject()(loginService: LoginService,
   }
 
   val logout = AuthorisedAction.async { implicit request => user =>
-    auditConnector.sendEvent(createLogoutEvent(user.username))
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers)
+      auditConnector.sendEvent(createLogoutEvent(user.username))
     Future.successful(Redirect(routes.LoginController.showLoginPage()).withSession(Session()))
   }
 
