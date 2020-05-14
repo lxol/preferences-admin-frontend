@@ -24,8 +24,8 @@ case class Email(address: String, verified: Boolean, verifiedOn: Option[DateTime
 
 object Email {
   implicit val dateFormatDefault = new Format[DateTime] {
-      override def reads(json: JsValue): JsResult[DateTime] = JodaReads.DefaultJodaDateTimeReads.reads(json)
-      override def writes(o: DateTime): JsValue = JodaWrites.JodaDateTimeNumberWrites.writes(o)
+    override def reads(json: JsValue): JsResult[DateTime] = JodaReads.DefaultJodaDateTimeReads.reads(json)
+    override def writes(o: DateTime): JsValue = JodaWrites.JodaDateTimeNumberWrites.writes(o)
   }
   implicit val writes: Writes[Email] = Json.writes[Email]
 
@@ -33,10 +33,8 @@ object Email {
     (JsPath \ "email").read[String] and
       (JsPath \ "status").read[String] and
       (JsPath \ "verifiedOn").readNullable[DateTime]
-    ) ((address, status, verifiedOn) => {
+  )((address, status, verifiedOn) => {
     val verified = (status == "verified")
     Email(address, verified, verifiedOn)
   })
 }
-
-

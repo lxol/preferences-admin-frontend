@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.model
 
-import play.api.libs.json.{Reads, __}
+import play.api.libs.json.{ Reads, __ }
 import play.api.libs.functional.syntax._
 
 case class RescindmentAlertsResult(sent: Int, requeued: Int, failed: Int, hardCopyRequested: Int)
@@ -27,5 +27,5 @@ object RescindmentAlertsResult {
       (__ \ "ready for retrial").read[Int] and
       (__ \ "failed permanently").read[Int] and
       (__ \ "hard copy requested").read[Int]
-    )(RescindmentAlertsResult.apply _)
+  )(RescindmentAlertsResult.apply _)
 }

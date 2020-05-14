@@ -16,73 +16,59 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.connectors
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import play.api.http.Status._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.preferencesadminfrontend.model._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class MessageConnector @Inject()( http: HttpClient,
-                                val servicesConfig: ServicesConfig
-                                )(implicit ec:ExecutionContext) {
-
+class MessageConnector @Inject()(http: HttpClient, val servicesConfig: ServicesConfig)(implicit ec: ExecutionContext) {
 
   def serviceUrl: String = servicesConfig.baseUrl("message")
 
-  def addRescindments(rescindmentRequest: RescindmentRequest)
-                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentUpdateResult] = {
+  def addRescindments(rescindmentRequest: RescindmentRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentUpdateResult] =
     http.POST[RescindmentRequest, RescindmentUpdateResult](s"$serviceUrl/admin/message/add-rescindments", rescindmentRequest)
-  }
 
-  def sendRescindmentAlerts()
-                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentAlertsResult] = {
+  def sendRescindmentAlerts()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentAlertsResult] =
     http.POSTEmpty[RescindmentAlertsResult](s"$serviceUrl/admin/send-rescindment-alerts")
-  }
 
-  def getWhitelist()(implicit hc:HeaderCarrier): Future[HttpResponse] = {
+  def getWhitelist()(implicit hc: HeaderCarrier): Future[HttpResponse] =
     http.GET[HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist").recover {
       case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
-  }
 
-  def addFormIdToWhitelist(formIdEntry: WhitelistEntry)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    http.POST[WhitelistEntry,HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/add",formIdEntry).recover {
+  def addFormIdToWhitelist(formIdEntry: WhitelistEntry)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.POST[WhitelistEntry, HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/add", formIdEntry).recover {
       case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
-  }
 
-  def deleteFormIdFromWhitelist(formIdEntry: WhitelistEntry)(implicit hc:HeaderCarrier): Future[HttpResponse] = {
-    http.POST[WhitelistEntry,HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/delete", formIdEntry).recover {
+  def deleteFormIdFromWhitelist(formIdEntry: WhitelistEntry)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.POST[WhitelistEntry, HttpResponse](s"$serviceUrl/admin/message/brake/gmc/whitelist/delete", formIdEntry).recover {
       case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
-  }
 
-  def getGmcBatches()(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def getGmcBatches()(implicit hc: HeaderCarrier): Future[HttpResponse] =
     http.GET[HttpResponse](s"$serviceUrl/admin/message/brake/gmc/batches").recover {
       case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
-  }
 
-  def getRandomMessagePreview(batch: GmcBatch)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    http.POST[GmcBatch,HttpResponse](s"$serviceUrl/admin/message/brake/random", batch).recover {
+  def getRandomMessagePreview(batch: GmcBatch)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.POST[GmcBatch, HttpResponse](s"$serviceUrl/admin/message/brake/random", batch).recover {
       case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
-  }
 
-  def approveGmcBatch(batch: GmcBatchApproval)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    http.POST[GmcBatchApproval,HttpResponse](s"$serviceUrl/admin/message/brake/accept", batch).recover {
+  def approveGmcBatch(batch: GmcBatchApproval)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.POST[GmcBatchApproval, HttpResponse](s"$serviceUrl/admin/message/brake/accept", batch).recover {
       case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
-  }
 
-  def rejectGmcBatch(batch: GmcBatchApproval)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    http.POST[GmcBatchApproval,HttpResponse](s"$serviceUrl/admin/message/brake/reject", batch).recover {
+  def rejectGmcBatch(batch: GmcBatchApproval)(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.POST[GmcBatchApproval, HttpResponse](s"$serviceUrl/admin/message/brake/reject", batch).recover {
       case e: Exception => HttpResponse(BAD_GATEWAY, None, Map(), Some(e.getMessage))
     }
-  }
 
 }

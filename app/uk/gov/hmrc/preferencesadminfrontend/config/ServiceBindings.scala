@@ -16,15 +16,14 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.config
 
-import play.api.inject.{Binding, Module}
-import play.api.{Configuration, Environment}
+import play.api.inject.{ Binding, Module }
+import play.api.{ Configuration, Environment }
 import uk.gov.hmrc.preferencesadminfrontend.config.filters.PreferencesFrontendAuditFilter
 
 class ServiceBindings extends Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
     bindFilters
 
-  private def bindFilters: Seq[Binding[_]] = Seq(
-    bind[PreferencesFrontendAuditFilter].toSelf.eagerly())
+  private def bindFilters: Seq[Binding[_]] = Seq(bind[PreferencesFrontendAuditFilter].toSelf.eagerly())
 
 }

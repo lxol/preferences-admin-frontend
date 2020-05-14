@@ -15,12 +15,10 @@
  */
 
 import com.google.inject.AbstractModule
-import uk.gov.hmrc.preferencesadminfrontend.config.{AppConfig, FrontendAppConfig}
-
+import uk.gov.hmrc.preferencesadminfrontend.config.{ AppConfig, FrontendAppConfig }
 
 class Module extends AbstractModule {
 
-  override def configure(): Unit = {
+  override def configure(): Unit =
     bind(classOf[AppConfig]).to(classOf[FrontendAppConfig]).asEagerSingleton()
-  }
 }

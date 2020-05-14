@@ -17,15 +17,15 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
 import play.api.data.Form
-import play.api.data.Forms.{mapping, nonEmptyText}
+import play.api.data.Forms.{ mapping, nonEmptyText }
 
-
-case class OptOutReason(reason : String)
+case class OptOutReason(reason: String)
 
 object OptOutReason {
-  def apply() : Form[OptOutReason] = Form[OptOutReason](
-    mapping(
-      "reason" -> nonEmptyText
-    )(OptOutReason.apply)(OptOutReason.unapply))
+  def apply(): Form[OptOutReason] =
+    Form[OptOutReason](
+      mapping(
+        "reason" -> nonEmptyText
+      )(OptOutReason.apply)(OptOutReason.unapply))
 
 }

@@ -19,81 +19,75 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers
 import javax.inject.Inject
 import play.api.i18n.I18nSupport
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import play.api.mvc.{ Action, AnyContent, MessagesControllerComponents }
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.model.Whitelist._
-import uk.gov.hmrc.preferencesadminfrontend.model.{Whitelist, WhitelistEntry}
-import uk.gov.hmrc.preferencesadminfrontend.views.html.{error_template, whitelist_add, whitelist_show}
+import uk.gov.hmrc.preferencesadminfrontend.model.{ Whitelist, WhitelistEntry }
+import uk.gov.hmrc.preferencesadminfrontend.views.html.{ error_template, whitelist_add, whitelist_show }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class WhitelistController @Inject()(messageConnector: MessageConnector,
-                                   mcc: MessagesControllerComponents )
-                                   (implicit appConfig: AppConfig, ec:ExecutionContext) extends FrontendController(mcc) with I18nSupport {
+class WhitelistController @Inject()(messageConnector: MessageConnector, mcc: MessagesControllerComponents)(implicit appConfig: AppConfig, ec: ExecutionContext)
+    extends FrontendController(mcc) with I18nSupport {
 
-  def showWhitelistPage: Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        messageConnector.getWhitelist.map(response =>
-          response.status match {
-            case OK =>
-              Json.parse(response.body).validate[Whitelist].asOpt match {
-                case Some(whitelist) => Ok(whitelist_show(whitelist))
-                case None => BadGateway(error_template("Error","There was an error:","The whitelist does not appear to be valid.",appConfig))
-              }
-            case _ => BadGateway(error_template("Error","There was an error:",response.body,appConfig))
+  def showWhitelistPage: Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    messageConnector.getWhitelist.map(response =>
+      response.status match {
+        case OK =>
+          Json.parse(response.body).validate[Whitelist].asOpt match {
+            case Some(whitelist) => Ok(whitelist_show(whitelist))
+            case None            => BadGateway(error_template("Error", "There was an error:", "The whitelist does not appear to be valid.", appConfig))
           }
-        )
+        case _ => BadGateway(error_template("Error", "There was an error:", response.body, appConfig))
+    })
   }
 
-  def addFormId: Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.whitelist_add(WhitelistEntry())))
+  def addFormId: Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.whitelist_add(WhitelistEntry())))
   }
 
-  def confirmAdd: Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        WhitelistEntry().bindFromRequest().fold(
-          formWithErrors => {
-            Future.successful(BadRequest(whitelist_add(formWithErrors)))
-          },
-          addEntry => {
-            messageConnector.addFormIdToWhitelist(addEntry).map(response =>
+  def confirmAdd: Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    WhitelistEntry()
+      .bindFromRequest()
+      .fold(
+        formWithErrors => {
+          Future.successful(BadRequest(whitelist_add(formWithErrors)))
+        },
+        addEntry => {
+          messageConnector
+            .addFormIdToWhitelist(addEntry)
+            .map(response =>
               response.status match {
                 case CREATED => Redirect(routes.WhitelistController.showWhitelistPage())
-                case _ => BadGateway(error_template("Error","There was an error:",response.body,appConfig))
-              }
-            )
-          }
-        )
+                case _       => BadGateway(error_template("Error", "There was an error:", response.body, appConfig))
+            })
+        }
+      )
   }
 
-  def deleteFormId(formId:String): Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.whitelist_delete(WhitelistEntry().fill(WhitelistEntry(formId,"")))))
+  def deleteFormId(formId: String): Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    Future.successful(Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.whitelist_delete(WhitelistEntry().fill(WhitelistEntry(formId, "")))))
   }
 
-  def confirmDelete: Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        WhitelistEntry().bindFromRequest().fold(
-          formWithErrors => {
-            Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.whitelist_delete(formWithErrors)))
-          },
-          deleteEntry => {
-            messageConnector.deleteFormIdFromWhitelist(deleteEntry).map(response =>
+  def confirmDelete: Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    WhitelistEntry()
+      .bindFromRequest()
+      .fold(
+        formWithErrors => {
+          Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.whitelist_delete(formWithErrors)))
+        },
+        deleteEntry => {
+          messageConnector
+            .deleteFormIdFromWhitelist(deleteEntry)
+            .map(response =>
               response.status match {
                 case OK => Redirect(routes.WhitelistController.showWhitelistPage())
-                case _ => BadGateway(error_template("Error","There was an error:",response.body,appConfig))
-              }
-            )
-          }
-        )
+                case _  => BadGateway(error_template("Error", "There was an error:", response.body, appConfig))
+            })
+        }
+      )
   }
 
 }

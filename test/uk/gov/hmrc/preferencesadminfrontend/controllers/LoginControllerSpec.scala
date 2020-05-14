@@ -34,9 +34,7 @@ import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.Future
 
-class LoginControllerSpec
-  extends LoginControllerFixtures
-    with ScalaFutures {
+class LoginControllerSpec extends LoginControllerFixtures with ScalaFutures {
 
   "GET /" should {
     "return 200" in {
@@ -53,23 +51,27 @@ class LoginControllerSpec
 
   "POST to login" should {
     "Redirect to the next page if credentials are correct" in {
-        val result = loginController.login( FakeRequest().withFormUrlEncodedBody(
-          "username" -> "user",
-          "password" -> "pwd"
-        ).withCSRFToken
-    )
+      val result = loginController.login(
+        FakeRequest()
+          .withFormUrlEncodedBody(
+            "username" -> "user",
+            "password" -> "pwd"
+          )
+          .withCSRFToken)
 
-      session(result).data should contain ("userId" -> "user")
+      session(result).data should contain("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
-      headers(result) should contain ("Location" -> "/paperless/admin/home")
+      headers(result) should contain("Location" -> "/paperless/admin/home")
     }
 
     "Return unauthorised if credentials are not correct" in {
       val result = loginController.login(
-        FakeRequest().withFormUrlEncodedBody(
-          "username" -> "user",
-          "password" -> "wrongPassword"
-          ).withCSRFToken
+        FakeRequest()
+          .withFormUrlEncodedBody(
+            "username" -> "user",
+            "password" -> "wrongPassword"
+          )
+          .withCSRFToken
       )
 
       result.futureValue.header.status shouldBe Status.UNAUTHORIZED
@@ -90,7 +92,7 @@ class LoginControllerSpec
 
       session(result).data should not contain ("userId" -> "user")
       status(result) shouldBe Status.SEE_OTHER
-      headers(result) should contain ("Location" -> "/paperless/admin")
+      headers(result) should contain("Location" -> "/paperless/admin")
     }
   }
 }

@@ -16,28 +16,29 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import org.joda.time.DateTime
 import play.api.Configuration
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.{DataCall, MergedDataEvent}
+import uk.gov.hmrc.play.audit.model.{ DataCall, MergedDataEvent }
 import uk.gov.hmrc.play.bootstrap.config.AppName
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{ Preference, TaxIdentifier }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class SearchService @Inject()(entityResolverConnector: EntityResolverConnector,
-                              preferencesConnector: PreferencesConnector,
-                              auditConnector: AuditConnector,
-                              config: Configuration ) {
+class SearchService @Inject()(
+  entityResolverConnector: EntityResolverConnector,
+  preferencesConnector: PreferencesConnector,
+  auditConnector: AuditConnector,
+  config: Configuration) {
 
   def searchPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
-    val preferences = if(taxId.name.equals("email")) getPreferences(taxId) else getPreference(taxId)
+    val preferences = if (taxId.name.equals("email")) getPreferences(taxId) else getPreference(taxId)
     preferences.map(preference => auditConnector.sendMergedEvent(createSearchEvent(user.username, taxId, preference.headOption)))
     preferences
   }
@@ -53,7 +54,7 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector,
         }
       }
     }
-    preferences.flatMap(Future.sequence(_)).recover{
+    preferences.flatMap(Future.sequence(_)).recover {
       case _ => Nil
     }
   }
@@ -61,42 +62,48 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector,
   def getPreference(taxId: TaxIdentifier)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[List[Preference]] = {
     val preferenceDetail = for {
       preferenceDetail <- entityResolverConnector.getPreferenceDetails(taxId)
-      taxIdentifiers <-  entityResolverConnector.getTaxIdentifiers(taxId)
-    } yield preferenceDetail.map(details => Preference(details.genericPaperless, details.genericUpdatedAt, details.taxCreditsPaperless, details.taxCreditsUpdatedAt, details.email, taxIdentifiers))
+      taxIdentifiers   <- entityResolverConnector.getTaxIdentifiers(taxId)
+    } yield
+      preferenceDetail.map(details =>
+        Preference(details.genericPaperless, details.genericUpdatedAt, details.taxCreditsPaperless, details.taxCreditsUpdatedAt, details.email, taxIdentifiers))
 
     preferenceDetail map {
-       case Some(preference) => List(preference)
-       case None => Nil
-     }
+      case Some(preference) => List(preference)
+      case None             => Nil
+    }
   }
 
-  def optOut(taxId: TaxIdentifier, reason: String)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[OptOutResult] = {
+  def optOut(taxId: TaxIdentifier, reason: String)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[OptOutResult] =
     for {
       originalPreference <- getPreference(taxId)
-      optoutResult <- entityResolverConnector.optOut(taxId)
-      newPreference <- getPreference(taxId)
+      optoutResult       <- entityResolverConnector.optOut(taxId)
+      newPreference      <- getPreference(taxId)
     } yield {
       auditConnector.sendMergedEvent(createOptOutEvent(user.username, taxId, originalPreference.headOption, newPreference.headOption, optoutResult, reason))
       optoutResult
     }
 
-  }
-
-  def createOptOutEvent(username: String, taxIdentifier: TaxIdentifier, originalPreference: Option[Preference], newPreference: Option[Preference], optOutResult: OptOutResult, reason: String): MergedDataEvent = {
+  def createOptOutEvent(
+    username: String,
+    taxIdentifier: TaxIdentifier,
+    originalPreference: Option[Preference],
+    newPreference: Option[Preference],
+    optOutResult: OptOutResult,
+    reason: String): MergedDataEvent = {
 
     val reasonOfFailureJson = optOutResult match {
-      case OptedOut => "Done"
-      case AlreadyOptedOut => "Preference already opted out"
+      case OptedOut           => "Done"
+      case AlreadyOptedOut    => "Preference already opted out"
       case PreferenceNotFound => "Preference not found"
     }
 
     val details: Map[String, String] = Map(
-      "user" -> username,
-      "query" -> Json.toJson(taxIdentifier).toString,
-      "optOutReason" -> reason,
+      "user"               -> username,
+      "query"              -> Json.toJson(taxIdentifier).toString,
+      "optOutReason"       -> reason,
       "originalPreference" -> originalPreference.fold("Not found")(p => Json.toJson(p).toString),
-      "newPreference" -> newPreference.fold("Not found")(p => Json.toJson(p).toString),
-      "reasonOfFailure" -> reasonOfFailureJson
+      "newPreference"      -> newPreference.fold("Not found")(p => Json.toJson(p).toString),
+      "reasonOfFailure"    -> reasonOfFailureJson
     )
 
     MergedDataEvent(
@@ -118,9 +125,9 @@ class SearchService @Inject()(entityResolverConnector: EntityResolverConnector,
   def createSearchEvent(username: String, taxIdentifier: TaxIdentifier, preference: Option[Preference]): MergedDataEvent = {
 
     val details: Map[String, String] = Map(
-      "user" -> username,
-      "query" -> Json.toJson(taxIdentifier).toString,
-      "result" -> preference.fold("Not found")(_ => "Found"),
+      "user"       -> username,
+      "query"      -> Json.toJson(taxIdentifier).toString,
+      "result"     -> preference.fold("Not found")(_ => "Found"),
       "preference" -> preference.fold("Not found")(p => Json.toJson(p).toString)
     )
 

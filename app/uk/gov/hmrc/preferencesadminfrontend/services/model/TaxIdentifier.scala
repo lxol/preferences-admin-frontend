@@ -23,11 +23,10 @@ case class TaxIdentifier(name: String, value: String) {
     case "sautr" => "sa"
     case "nino"  => "paye"
     case "email" => "email"
-    case _ => throw new RuntimeException("Invalid tax id name")
+    case _       => throw new RuntimeException("Invalid tax id name")
   }
 }
 
 object TaxIdentifier {
   implicit val format = Json.format[TaxIdentifier]
 }
-

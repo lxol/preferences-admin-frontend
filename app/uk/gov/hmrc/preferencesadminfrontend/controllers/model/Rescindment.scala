@@ -18,19 +18,19 @@ package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
 import org.joda.time.LocalDate
 import play.api.data.Form
-import play.api.data.Forms.{mapping, nonEmptyText}
+import play.api.data.Forms.{ mapping, nonEmptyText }
 import uk.gov.hmrc.preferencesadminfrontend.model.RescindmentRequest
 
 object Rescindment {
 
   def apply() = Form[RescindmentRequest](
     mapping(
-      "batchId" -> nonEmptyText,
-      "formId" -> nonEmptyText,
-      "date" -> nonEmptyText,
-      "reference" -> nonEmptyText,
+      "batchId"         -> nonEmptyText,
+      "formId"          -> nonEmptyText,
+      "date"            -> nonEmptyText,
+      "reference"       -> nonEmptyText,
       "emailTemplateId" -> nonEmptyText
-    )((batchId, formId, date, reference, emailTemplateId) =>
-      RescindmentRequest.apply(batchId, formId, date, reference, emailTemplateId))(RescindmentRequest.unapply _)
+    )((batchId, formId, date, reference, emailTemplateId) => RescindmentRequest.apply(batchId, formId, date, reference, emailTemplateId))(
+      RescindmentRequest.unapply _)
   )
 }

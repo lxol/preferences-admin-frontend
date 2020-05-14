@@ -23,17 +23,16 @@ import scala.concurrent.Future
 
 object AuthorisedAction {
 
-  def async(block: Request[AnyContent] => User => Future[Result]): Action[AnyContent] = {
-    Action.async {
-      implicit request => {
+  def async(block: Request[AnyContent] => User => Future[Result]): Action[AnyContent] =
+    Action.async { implicit request =>
+      {
         val user = request.session.get(User.sessionKey).map(name => User(name, ""))
 
         user match {
           case Some(user) => block(request)(user)
-          case _ => Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage()))
+          case _          => Future.successful(play.api.mvc.Results.Redirect(routes.LoginController.showLoginPage()))
         }
       }
 
     }
-  }
 }

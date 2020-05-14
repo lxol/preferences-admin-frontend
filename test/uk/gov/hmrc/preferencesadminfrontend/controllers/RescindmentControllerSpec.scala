@@ -20,30 +20,30 @@ import akka.stream.Materializer
 import org.jsoup.Jsoup
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.mockito.{ArgumentMatcher, ArgumentMatchers}
+import org.mockito.{ ArgumentMatcher, ArgumentMatchers }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.api.http.Status
 import play.api.i18n.MessagesApi
-import play.api.mvc.{AnyContentAsFormUrlEncoded, MessagesControllerComponents}
+import play.api.mvc.{ AnyContentAsFormUrlEncoded, MessagesControllerComponents }
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
-import play.api.test.Helpers.{headers, _}
+import play.api.test.Helpers.{ headers, _ }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
+import uk.gov.hmrc.preferencesadminfrontend.model.{ RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult }
 import uk.gov.hmrc.preferencesadminfrontend.services._
 import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class RescindmentControllerSpec extends UnitSpec  with ScalaFutures with GuiceOneAppPerSuite {
+class RescindmentControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
   implicit val hc = HeaderCarrier()
   implicit val messagesApi = app.injector.instanceOf[MessagesApi]
   implicit val materializer = app.injector.instanceOf[Materializer]
@@ -85,10 +85,10 @@ class RescindmentControllerSpec extends UnitSpec  with ScalaFutures with GuiceOn
     "return ok if session is authorised and form data payload is valid" in new RescindmentTestCase {
       val fakeRequestWithForm = FakeRequest(routes.RescindmentController.rescindment()).withSession(User.sessionKey -> "user")
       val requestWithFormData: FakeRequest[AnyContentAsFormUrlEncoded] = fakeRequestWithForm.withFormUrlEncodedBody(
-        "batchId" -> "1234567",
-        "formId" -> "SA316",
-        "date" -> "2017-03-16",
-        "reference" -> "ref-test",
+        "batchId"         -> "1234567",
+        "formId"          -> "SA316",
+        "date"            -> "2017-03-16",
+        "reference"       -> "ref-test",
         "emailTemplateId" -> "rescindedMessageAlert"
       )
       val rescindmentRequest = RescindmentRequest(
@@ -99,10 +99,16 @@ class RescindmentControllerSpec extends UnitSpec  with ScalaFutures with GuiceOn
         emailTemplateId = "rescindedMessageAlert"
       )
       val rescindmentUpdateResult = RescindmentUpdateResult(
-        tried = 1, succeeded = 1, alreadyUpdated = 0, invalidState = 0
+        tried = 1,
+        succeeded = 1,
+        alreadyUpdated = 0,
+        invalidState = 0
       )
-      when(rescindmentServiceMock.addRescindments(ArgumentMatchers.eq(rescindmentRequest))
-      (ArgumentMatchers.any[User], ArgumentMatchers.any[HeaderCarrier], ArgumentMatchers.any[ExecutionContext]))
+      when(
+        rescindmentServiceMock.addRescindments(ArgumentMatchers.eq(rescindmentRequest))(
+          ArgumentMatchers.any[User],
+          ArgumentMatchers.any[HeaderCarrier],
+          ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(rescindmentUpdateResult))
       val result = rescindmentController.rescindment()(requestWithFormData.withCSRFToken)
 
@@ -131,10 +137,13 @@ class RescindmentControllerSpec extends UnitSpec  with ScalaFutures with GuiceOn
     "return ok if session is authorised" in new RescindmentTestCase {
       val fakeRequestWithForm = FakeRequest(routes.RescindmentController.sendRescindmentAlerts()).withSession(User.sessionKey -> "user")
       val rescindmentAlertsResult = RescindmentAlertsResult(
-        sent = 1, requeued = 1, failed = 0, hardCopyRequested = 0
+        sent = 1,
+        requeued = 1,
+        failed = 0,
+        hardCopyRequested = 0
       )
-      when(rescindmentServiceMock.sendRescindmentAlerts()
-      (ArgumentMatchers.any[User], ArgumentMatchers.any[HeaderCarrier], ArgumentMatchers.any[ExecutionContext]))
+      when(
+        rescindmentServiceMock.sendRescindmentAlerts()(ArgumentMatchers.any[User], ArgumentMatchers.any[HeaderCarrier], ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(rescindmentAlertsResult))
       val result = rescindmentController.sendRescindmentAlerts()(fakeRequestWithForm.withCSRFToken)
 
@@ -155,21 +164,21 @@ class RescindmentControllerSpec extends UnitSpec  with ScalaFutures with GuiceOn
 }
 
 trait RescindmentTestCase extends SpecBase with MockitoSugar {
- import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
+  import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 
- implicit val stubbedMCC: MessagesControllerComponents = stubMessagesControllerComponents()
- implicit val ecc: ExecutionContext = stubbedMCC.executionContext
+  implicit val stubbedMCC: MessagesControllerComponents = stubMessagesControllerComponents()
+  implicit val ecc: ExecutionContext = stubbedMCC.executionContext
 
   val rescindmentServiceMock = mock[RescindmentService]
   when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
-  def rescindmentController()(implicit messages: MessagesApi, appConfig: AppConfig): RescindmentController = new RescindmentController(auditConnectorMock, rescindmentServiceMock, stubbedMCC)
+  def rescindmentController()(implicit messages: MessagesApi, appConfig: AppConfig): RescindmentController =
+    new RescindmentController(auditConnectorMock, rescindmentServiceMock, stubbedMCC)
 
-  override def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
+  override def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] =
     new ArgumentMatcher[MergedDataEvent]() {
       def matches(t: MergedDataEvent): Boolean = this.matches(t) && {
         t.request.generatedAt == expected.request.generatedAt && t.response.generatedAt == expected.response.generatedAt
       }
     }
-  }
 }

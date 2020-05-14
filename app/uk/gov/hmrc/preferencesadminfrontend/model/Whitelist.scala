@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.model
 
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.{ JsArray, Json }
 
 case class Whitelist(formIdList: JsArray)
 

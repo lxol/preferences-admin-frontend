@@ -28,22 +28,21 @@ class LoginService @Inject()(loginServiceConfig: LoginServiceConfiguration) {
   def isAuthorised(user: User): Boolean = loginServiceConfig.authorisedUsers.contains(user)
 }
 
-class LoginServiceConfiguration @Inject()(val configuration: Configuration,
-                                          val runMode: RunMode
-                                         ) {
+class LoginServiceConfiguration @Inject()(val configuration: Configuration, val runMode: RunMode) {
 
   def verifyConfiguration() = if (authorisedUsers.isEmpty) throw new Missing("Property users is empty")
 
   lazy val authorisedUsers: Seq[User] = {
-    configuration.getOptional[Seq[Configuration]](s"${runMode.env}.users")
-        .getOrElse(throw new Missing("Property users missing")).map {
-      userConfig: Configuration =>
+    configuration
+      .getOptional[Seq[Configuration]](s"${runMode.env}.users")
+      .getOrElse(throw new Missing("Property users missing"))
+      .map { userConfig: Configuration =>
         val encodedPwd = userConfig.getOptional[String]("password").getOrElse(throw new Missing("Property password missing"))
         val decodedPwd = new String(BaseEncoding.base64().decode(encodedPwd))
         User(
           userConfig.getOptional[String]("username").getOrElse(throw new Missing("Property username missing")),
           decodedPwd
         )
-    }
+      }
   }
 }

@@ -16,39 +16,37 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.model
 
-import play.api.data.{Form, Forms, Mapping}
+import play.api.data.{ Form, Forms, Mapping }
 import play.api.data.Forms._
-import play.api.data.validation.{Constraint, Invalid, Valid, ValidationError}
-import play.api.libs.json.{Json, OWrites, Reads}
+import play.api.data.validation.{ Constraint, Invalid, Valid, ValidationError }
+import play.api.libs.json.{ Json, OWrites, Reads }
 
 case class WhitelistEntry(formId: String, reasonText: String)
 
 object WhitelistEntry {
 
-  val reasonTextConstraint: Constraint[String] = Constraint("constraints.reasonText")({
-    reasonText =>
-      if(reasonText.isEmpty) {
-        Invalid("A reason is required")
-      } else if(reasonText.matches("[a-zA-Z0-9\\s\\-\\.,]+")) {
-        Valid
-      } else {
-        Invalid("Invalid characters entered")
-      }
+  val reasonTextConstraint: Constraint[String] = Constraint("constraints.reasonText")({ reasonText =>
+    if (reasonText.isEmpty) {
+      Invalid("A reason is required")
+    } else if (reasonText.matches("[a-zA-Z0-9\\s\\-\\.,]+")) {
+      Valid
+    } else {
+      Invalid("Invalid characters entered")
+    }
   })
 
   implicit val writes: OWrites[WhitelistEntry] = Json.writes[WhitelistEntry]
 
-  def apply():Form[WhitelistEntry] = Form(
+  def apply(): Form[WhitelistEntry] = Form(
     mapping(
-      "formId" -> nonEmptyTextWithError("A form ID is required"),
+      "formId"     -> nonEmptyTextWithError("A form ID is required"),
       "reasonText" -> text.verifying(reasonTextConstraint)
     )(WhitelistEntry.apply)(WhitelistEntry.unapply)
   )
 
-  def nonEmptyTextWithError(error: String): Mapping[String] = {
+  def nonEmptyTextWithError(error: String): Mapping[String] =
     Forms.text verifying Constraint[String]("constraint.required") { o =>
       if (o == null) Invalid(ValidationError(error)) else if (o.trim.isEmpty) Invalid(ValidationError(error)) else Valid
     }
-  }
 
 }

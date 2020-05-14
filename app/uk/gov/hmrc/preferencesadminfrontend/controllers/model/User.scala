@@ -23,4 +23,3 @@ case class User(username: String, password: String)
 object User {
   val sessionKey = SessionKeys.userId
 }
-

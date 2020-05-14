@@ -21,35 +21,34 @@ import play.api.http.Status._
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
-import uk.gov.hmrc.preferencesadminfrontend.model.{BatchMessagePreview, GmcBatch, MessagePreview}
+import uk.gov.hmrc.preferencesadminfrontend.model.{ BatchMessagePreview, GmcBatch, MessagePreview }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class MessageService @Inject()(messageConnector: MessageConnector) {
 
-  def getGmcBatches()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[Seq[GmcBatch],String]] = {
+  def getGmcBatches()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[Seq[GmcBatch], String]] =
     messageConnector.getGmcBatches.map(response =>
       response.status match {
         case OK =>
           Json.parse(response.body).validate[Seq[GmcBatch]].asOpt match {
             case Some(batches) => Left(batches)
-            case None => Right("The GMC batches retrieved do not appear to be valid.")
+            case None          => Right("The GMC batches retrieved do not appear to be valid.")
           }
         case _ => Right(response.body)
-      }
-    )
-  }
+    })
 
-  def getRandomMessagePreview(batch: GmcBatch)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[BatchMessagePreview,String]] = {
-    messageConnector.getRandomMessagePreview(batch).map(response =>
-      response.status match {
-        case OK =>
-          Json.parse(response.body).validate[MessagePreview].asOpt match {
-            case Some(preview) => Left(BatchMessagePreview(preview, batch.batchId))
-            case None => Right("The message preview retrieved does not appear to be valid.")
-          }
-        case _ => Right(response.body)
+  def getRandomMessagePreview(batch: GmcBatch)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[BatchMessagePreview, String]] =
+    messageConnector
+      .getRandomMessagePreview(batch)
+      .map(response =>
+        response.status match {
+          case OK =>
+            Json.parse(response.body).validate[MessagePreview].asOpt match {
+              case Some(preview) => Left(BatchMessagePreview(preview, batch.batchId))
+              case None          => Right("The message preview retrieved does not appear to be valid.")
+            }
+          case _ => Right(response.body)
       })
-  }
 
 }

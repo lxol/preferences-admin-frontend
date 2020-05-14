@@ -38,5 +38,5 @@ object EntityId {
     override def writes(e: EntityId): JsValue = JsString(e.value)
   }
 
-  implicit val formats : Format[EntityId] = Format(read, write)
+  implicit val formats: Format[EntityId] = Format(read, write)
 }

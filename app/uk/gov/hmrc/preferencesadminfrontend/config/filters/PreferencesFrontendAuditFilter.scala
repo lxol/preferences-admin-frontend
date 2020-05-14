@@ -17,21 +17,20 @@
 package uk.gov.hmrc.preferencesadminfrontend.config.filters
 
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.bootstrap.config.{ControllerConfigs, HttpAuditEvent}
+import uk.gov.hmrc.play.bootstrap.config.{ ControllerConfigs, HttpAuditEvent }
 import uk.gov.hmrc.play.bootstrap.filters.frontend.DefaultFrontendAuditFilter
 
 import scala.concurrent.ExecutionContext
-
-
 @Singleton
-class PreferencesFrontendAuditFilter @Inject()(controllerConfigs: ControllerConfigs,
-                                               override val auditConnector: AuditConnector,
-                                               httpAuditEvent: HttpAuditEvent,
-                                               override val mat: Materializer)(implicit ec: ExecutionContext)
+class PreferencesFrontendAuditFilter @Inject()(
+  controllerConfigs: ControllerConfigs,
+  override val auditConnector: AuditConnector,
+  httpAuditEvent: HttpAuditEvent,
+  override val mat: Materializer)(implicit ec: ExecutionContext)
     extends DefaultFrontendAuditFilter(controllerConfigs, auditConnector, httpAuditEvent, mat) {
 
-    override val maskedFormFields: Seq[String] = Seq("password")
+  override val maskedFormFields: Seq[String] = Seq("password")
 
 }

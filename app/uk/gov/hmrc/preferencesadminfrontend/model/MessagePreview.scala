@@ -17,18 +17,16 @@
 package uk.gov.hmrc.preferencesadminfrontend.model
 
 import com.google.common.io.BaseEncoding
-import play.api.libs.json.{Json, Reads}
+import play.api.libs.json.{ Json, Reads }
 import play.twirl.api.Html
 
 case class MessagePreview(subject: String, content: String, externalRefId: String, messageType: String, issueDate: String, taxIdentifierName: String)
 
 case class BatchMessagePreview(message: MessagePreview, batchId: String) {
-  def getContentHtml: Html = {
+  def getContentHtml: Html =
     Html(new String(BaseEncoding.base64().decode(message.content)))
-  }
 }
 
 object MessagePreview {
   implicit val messagePreviewReads: Reads[MessagePreview] = Json.reads[MessagePreview]
 }
-

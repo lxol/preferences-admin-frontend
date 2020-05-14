@@ -17,16 +17,21 @@
 package uk.gov.hmrc.preferencesadminfrontend.services.model
 
 import org.joda.time.DateTime
-import play.api.libs.json.JodaWrites.{JodaDateTimeWrites => _}
+import play.api.libs.json.JodaWrites.{ JodaDateTimeWrites => _ }
 import play.api.libs.json._
 
-
-case class Preference(genericPaperless: Boolean, genericUpdatedAt : Option[DateTime], taxCreditsPaperless: Boolean,  taxCreditsUpdatedAt : Option[DateTime], email: Option[Email], taxIdentifiers: Seq[TaxIdentifier])
+case class Preference(
+  genericPaperless: Boolean,
+  genericUpdatedAt: Option[DateTime],
+  taxCreditsPaperless: Boolean,
+  taxCreditsUpdatedAt: Option[DateTime],
+  email: Option[Email],
+  taxIdentifiers: Seq[TaxIdentifier])
 
 object Preference {
-    implicit val dateFormatDefault = new Format[DateTime] {
-        override def reads(json: JsValue): JsResult[DateTime] = JodaReads.DefaultJodaDateTimeReads.reads(json)
-        override def writes(o: DateTime): JsValue = JodaWrites.JodaDateTimeNumberWrites.writes(o)
-    }
+  implicit val dateFormatDefault = new Format[DateTime] {
+    override def reads(json: JsValue): JsResult[DateTime] = JodaReads.DefaultJodaDateTimeReads.reads(json)
+    override def writes(o: DateTime): JsValue = JodaWrites.JodaDateTimeNumberWrites.writes(o)
+  }
   implicit val format = Json.format[Preference]
 }
