@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,20 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.preferencesadminfrontend.connectors.MessageConnector
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
-import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
+import uk.gov.hmrc.preferencesadminfrontend.model.{ RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class RescindmentService @Inject()(messageConnector: MessageConnector ) {
+class RescindmentService @Inject()(messageConnector: MessageConnector) {
 
-  def addRescindments(rescindmentRequest: RescindmentRequest)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentUpdateResult] = {
+  def addRescindments(rescindmentRequest: RescindmentRequest)(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentUpdateResult] =
     messageConnector.addRescindments(rescindmentRequest)
-  }
 
-  def sendRescindmentAlerts()(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentAlertsResult] = {
+  def sendRescindmentAlerts()(implicit user: User, hc: HeaderCarrier, ec: ExecutionContext): Future[RescindmentAlertsResult] =
     messageConnector.sendRescindmentAlerts()
-  }
 }

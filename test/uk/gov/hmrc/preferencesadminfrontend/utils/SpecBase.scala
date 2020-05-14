@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.mockito.ArgumentMatcher
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.preferencesadminfrontend.connectors.{EntityResolverConnector, MessageConnector, PreferencesConnector}
+import uk.gov.hmrc.preferencesadminfrontend.connectors.{ EntityResolverConnector, MessageConnector, PreferencesConnector }
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
 
 trait SpecBase extends MockitoSugar {
@@ -32,16 +32,14 @@ trait SpecBase extends MockitoSugar {
   val preferencesConnectorMock = mock[PreferencesConnector]
   val messageConnectorMock = mock[MessageConnector]
 
-  def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] = {
+  def isSimilar(expected: MergedDataEvent): ArgumentMatcher[MergedDataEvent] =
     new ArgumentMatcher[MergedDataEvent]() {
-      def matches(t: MergedDataEvent): Boolean = {
+      def matches(t: MergedDataEvent): Boolean =
         t.auditSource == expected.auditSource &&
           t.auditType == expected.auditType &&
           t.request.tags == expected.request.tags &&
           t.request.detail == expected.request.detail &&
           t.response.tags == expected.response.tags &&
           t.response.detail == expected.response.detail
-      }
     }
-  }
 }

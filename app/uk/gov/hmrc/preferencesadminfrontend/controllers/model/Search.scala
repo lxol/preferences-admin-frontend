@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,16 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
 import play.api.data.Form
-import play.api.data.Forms.{mapping, nonEmptyText, text}
+import play.api.data.Forms.{ mapping, nonEmptyText, text }
 import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
-
 
 object Search {
 
-  def apply() = Form[TaxIdentifier](
-    mapping(
-      "name" -> text
-        .verifying("error.name_invalid", name => name == "sautr" || name == "nino" || name == "email"),
-      "value" -> nonEmptyText
-    )((name, value) => TaxIdentifier.apply(name, value.toUpperCase))(TaxIdentifier.unapply))
+  def apply() =
+    Form[TaxIdentifier](
+      mapping(
+        "name" -> text
+          .verifying("error.name_invalid", name => name == "sautr" || name == "nino" || name == "email"),
+        "value" -> nonEmptyText
+      )((name, value) => TaxIdentifier.apply(name, value.toUpperCase))(TaxIdentifier.unapply))
 }

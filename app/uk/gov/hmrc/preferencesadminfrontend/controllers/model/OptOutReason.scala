@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@
 package uk.gov.hmrc.preferencesadminfrontend.controllers.model
 
 import play.api.data.Form
-import play.api.data.Forms.{mapping, nonEmptyText}
+import play.api.data.Forms.{ mapping, nonEmptyText }
 
-
-case class OptOutReason(reason : String)
+case class OptOutReason(reason: String)
 
 object OptOutReason {
-  def apply() : Form[OptOutReason] = Form[OptOutReason](
-    mapping(
-      "reason" -> nonEmptyText
-    )(OptOutReason.apply)(OptOutReason.unapply))
+  def apply(): Form[OptOutReason] =
+    Form[OptOutReason](
+      mapping(
+        "reason" -> nonEmptyText
+      )(OptOutReason.apply)(OptOutReason.unapply))
 
 }

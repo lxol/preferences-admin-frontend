@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,66 +16,60 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.controllers
 
-import javax.inject.{Inject, Singleton}
-import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import play.api.{Configuration, Play}
+import javax.inject.{ Inject, Singleton }
+import play.api.i18n.{ I18nSupport, MessagesApi }
+import play.api.mvc.{ Action, AnyContent, MessagesControllerComponents }
+import play.api.{ Configuration, Play }
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.preferencesadminfrontend.config.AppConfig
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.Rescindment
 import uk.gov.hmrc.preferencesadminfrontend.services.RescindmentService
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class RescindmentController @Inject()(auditConnector: AuditConnector,
-                                      rescindmentService: RescindmentService,
-                                      mcc: MessagesControllerComponents
-                                     )
-                                     (implicit appConfig: AppConfig, ec: ExecutionContext)
-  extends FrontendController(mcc) with I18nSupport {
+class RescindmentController @Inject()(auditConnector: AuditConnector, rescindmentService: RescindmentService, mcc: MessagesControllerComponents)(
+  implicit appConfig: AppConfig,
+  ec: ExecutionContext)
+    extends FrontendController(mcc) with I18nSupport {
 
   def appNameConfiguration: Configuration = Play.current.configuration
 
-  def showRescindmentPage(): Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        Future.successful(
-          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment(Rescindment().discardingErrors))
-        )
+  def showRescindmentPage(): Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    Future.successful(
+      Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment(Rescindment().discardingErrors))
+    )
   }
 
-  def rescindment(): Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        Rescindment().bindFromRequest.fold(
-          errors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment(errors))),
-          rescindmentRequest => {
-            rescindmentService.addRescindments(rescindmentRequest).map(updateResult =>
-              Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment_send(
-                Rescindment().discardingErrors, succeeded = updateResult.succeeded.toString)
-              )
-            )
-          }
-        )
+  def rescindment(): Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    Rescindment().bindFromRequest.fold(
+      errors => Future.successful(BadRequest(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment(errors))),
+      rescindmentRequest => {
+        rescindmentService
+          .addRescindments(rescindmentRequest)
+          .map(updateResult =>
+            Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment_send(Rescindment().discardingErrors, succeeded = updateResult.succeeded.toString)))
+      }
+    )
   }
 
-  def showRescindmentAlertsPage(): Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        Future.successful(
-          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment_send(Rescindment().discardingErrors))
-        )
+  def showRescindmentAlertsPage(): Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    Future.successful(
+      Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment_send(Rescindment().discardingErrors))
+    )
   }
 
-  def sendRescindmentAlerts(): Action[AnyContent] = AuthorisedAction.async {
-    implicit request =>
-      implicit user =>
-        rescindmentService.sendRescindmentAlerts().map(alertsResult =>
-          Ok(uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment_send(
-            Rescindment().discardingErrors, sent = alertsResult.sent.toString, failed = alertsResult.failed.toString
-          ))
-        )
+  def sendRescindmentAlerts(): Action[AnyContent] = AuthorisedAction.async { implicit request => implicit user =>
+    rescindmentService
+      .sendRescindmentAlerts()
+      .map(
+        alertsResult =>
+          Ok(
+            uk.gov.hmrc.preferencesadminfrontend.views.html.rescindment_send(
+              Rescindment().discardingErrors,
+              sent = alertsResult.sent.toString,
+              failed = alertsResult.failed.toString
+            )))
   }
 }

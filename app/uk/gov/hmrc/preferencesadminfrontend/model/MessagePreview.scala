@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,16 @@
 package uk.gov.hmrc.preferencesadminfrontend.model
 
 import com.google.common.io.BaseEncoding
-import play.api.libs.json.{Json, Reads}
+import play.api.libs.json.{ Json, Reads }
 import play.twirl.api.Html
 
 case class MessagePreview(subject: String, content: String, externalRefId: String, messageType: String, issueDate: String, taxIdentifierName: String)
 
 case class BatchMessagePreview(message: MessagePreview, batchId: String) {
-  def getContentHtml: Html = {
+  def getContentHtml: Html =
     Html(new String(BaseEncoding.base64().decode(message.content)))
-  }
 }
 
 object MessagePreview {
   implicit val messagePreviewReads: Reads[MessagePreview] = Json.reads[MessagePreview]
 }
-

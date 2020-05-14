@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,21 @@
 
 package uk.gov.hmrc.preferencesadminfrontend.services
 
-import org.joda.time.{DateTime, DateTimeZone}
+import org.joda.time.{ DateTime, DateTimeZone }
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.concurrent.{ IntegrationPatience, ScalaFutures }
 import org.scalatest.mockito.MockitoSugar
 import play.api.Configuration
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.connectors._
-import uk.gov.hmrc.preferencesadminfrontend.services.model.{Email, EntityId, Preference, TaxIdentifier}
+import uk.gov.hmrc.preferencesadminfrontend.services.model.{ Email, EntityId, Preference, TaxIdentifier }
 import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
 
 class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures with IntegrationPatience {
 
@@ -107,7 +106,8 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
   "optOut" should {
 
     "call entity resolver to opt the user out" in new SearchServiceTestCase {
-      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr))
+        .thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
       when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
       when(entityResolverConnectorMock.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
 
@@ -116,14 +116,16 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "create an audit event when the user is opted out" in new SearchServiceTestCase {
-      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr))
+        .thenReturn(Future.successful(optedInPreferenceDetails), Future.successful(optedOutPreferenceDetails))
       when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
       when(entityResolverConnectorMock.optOut(validSaUtr)).thenReturn(Future.successful(OptedOut))
       when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
       searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe OptedOut
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut, "my optOut reason")
+      val expectedAuditEvent =
+        searchService.createOptOutEvent("me", validSaUtr, Some(optedInPreference), Some(optedOutPreference), OptedOut, "my optOut reason")
       verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
 
@@ -140,31 +142,41 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
     }
 
     "create an audit event when the user is already opted out" in new SearchServiceTestCase {
-      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr)).thenReturn(Future.successful(optedOutPreferenceDetails), Future.successful(optedOutPreferenceDetails))
+      when(entityResolverConnectorMock.getPreferenceDetails(validSaUtr))
+        .thenReturn(Future.successful(optedOutPreferenceDetails), Future.successful(optedOutPreferenceDetails))
       when(entityResolverConnectorMock.getTaxIdentifiers(validSaUtr)).thenReturn(Future.successful(taxIdentifiers))
       when(entityResolverConnectorMock.optOut(validSaUtr)).thenReturn(Future.successful(AlreadyOptedOut))
       when(auditConnectorMock.sendEvent(any())(any(), any())).thenReturn(Future.successful(AuditResult.Success))
 
       searchService.optOut(validSaUtr, "my optOut reason").futureValue shouldBe AlreadyOptedOut
 
-      val expectedAuditEvent = searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut, "my optOut reason")
+      val expectedAuditEvent =
+        searchService.createOptOutEvent("me", validSaUtr, Some(optedOutPreference), Some(optedOutPreference), AlreadyOptedOut, "my optOut reason")
       verify(auditConnectorMock).sendMergedEvent(argThat(isSimilar(expectedAuditEvent)))(any(), any())
     }
   }
 
   "createSearchEvent" should {
     "generate the correct event when the preference exists" in new SearchServiceTestCase {
-      val preference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = true, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
-        email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)), taxIdentifiers = Seq(TaxIdentifier("sautr", "123"), TaxIdentifier("nino", "ABC")))
+      val preference = Preference(
+        genericPaperless = true,
+        genericUpdatedAt = genericUpdatedAt,
+        taxCreditsPaperless = true,
+        taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+        email = Some(Email(address = "john.doe@digital.hmrc.gov.uk", verified = true, verifiedOn = verifiedOn)),
+        taxIdentifiers = Seq(TaxIdentifier("sautr", "123"), TaxIdentifier("nino", "ABC"))
+      )
       val event = searchService.createSearchEvent("me", TaxIdentifier("sautr", "123"), Some(preference))
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
-      event.request.detail shouldBe Map("preference" -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":true,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123\"},{\"name\":\"nino\",\"value\":\"ABC\"}]}",
-        "result" -> "Found",
-        "query" -> "{\"name\":\"sautr\",\"value\":\"123\"}",
+      event.request.detail shouldBe Map(
+        "preference"   -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":true,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123\"},{\"name\":\"nino\",\"value\":\"ABC\"}]}",
+        "result"       -> "Found",
+        "query"        -> "{\"name\":\"sautr\",\"value\":\"123\"}",
         "DataCallType" -> "request",
-        "user" -> "me")
+        "user"         -> "me"
+      )
       event.request.tags("transactionName") shouldBe "Paperless opt out search"
     }
 
@@ -173,7 +185,12 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
-      event.request.detail shouldBe Map("preference" -> "Not found", "result" -> "Not found", "query" -> "{\"name\":\"sautr\",\"value\":\"123\"}", "DataCallType" -> "request", "user" -> "me")
+      event.request.detail shouldBe Map(
+        "preference"   -> "Not found",
+        "result"       -> "Not found",
+        "query"        -> "{\"name\":\"sautr\",\"value\":\"123\"}",
+        "DataCallType" -> "request",
+        "user"         -> "me")
       event.request.tags("transactionName") shouldBe "Paperless opt out search"
 
     }
@@ -186,13 +203,15 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxSucceeded"
-      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
-        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+      event.request.detail shouldBe Map(
+        "optOutReason"       -> "my optOut reason",
+        "query"              -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
         "originalPreference" -> "{\"genericPaperless\":true,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"email\":{\"address\":\"john.doe@digital.hmrc.gov.uk\",\"verified\":true,\"verifiedOn\":1518652800000},\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-        "DataCallType" -> "request",
-        "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-        "reasonOfFailure" -> "Done",
-        "user" -> "me")
+        "DataCallType"       -> "request",
+        "newPreference"      -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+        "reasonOfFailure"    -> "Done",
+        "user"               -> "me"
+      )
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
     }
 
@@ -201,13 +220,15 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
-      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
-        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+      event.request.detail shouldBe Map(
+        "optOutReason"       -> "my optOut reason",
+        "query"              -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
         "originalPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-        "DataCallType" -> "request",
-        "newPreference" -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
-        "reasonOfFailure" -> "Preference already opted out",
-        "user" -> "me")
+        "DataCallType"       -> "request",
+        "newPreference"      -> "{\"genericPaperless\":false,\"genericUpdatedAt\":1518652800000,\"taxCreditsPaperless\":false,\"taxCreditsUpdatedAt\":1518652800000,\"taxIdentifiers\":[{\"name\":\"sautr\",\"value\":\"123456789\"},{\"name\":\"nino\",\"value\":\"CE067583D\"}]}",
+        "reasonOfFailure"    -> "Preference already opted out",
+        "user"               -> "me"
+      )
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
 
     }
@@ -217,8 +238,15 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
-      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
-        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}", "originalPreference" -> "Not found", "DataCallType" -> "request", "newPreference" -> "Not found", "reasonOfFailure" -> "Preference not found", "user" -> "me")
+      event.request.detail shouldBe Map(
+        "optOutReason"       -> "my optOut reason",
+        "query"              -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+        "originalPreference" -> "Not found",
+        "DataCallType"       -> "request",
+        "newPreference"      -> "Not found",
+        "reasonOfFailure"    -> "Preference not found",
+        "user"               -> "me"
+      )
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
 
     }
@@ -229,22 +257,26 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
       event.auditSource shouldBe "preferences-admin-frontend"
       event.auditType shouldBe "TxFailed"
       event.request.tags("transactionName") shouldBe "Manual opt out from paperless"
-      event.request.detail shouldBe Map("optOutReason" -> "my optOut reason",
-        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+      event.request.detail shouldBe Map(
+        "optOutReason"       -> "my optOut reason",
+        "query"              -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
         "originalPreference" -> "Not found",
-        "DataCallType" -> "request",
-        "newPreference" -> "Not found",
-        "reasonOfFailure" -> "Preference not found",
-        "user" -> "me")
+        "DataCallType"       -> "request",
+        "newPreference"      -> "Not found",
+        "reasonOfFailure"    -> "Preference not found",
+        "user"               -> "me"
+      )
 
       event.response.tags("transactionName") shouldBe "Manual opt out from paperless"
-      event.response.detail shouldBe Map("optOutReason" -> "my optOut reason",
-        "query" -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
+      event.response.detail shouldBe Map(
+        "optOutReason"       -> "my optOut reason",
+        "query"              -> "{\"name\":\"sautr\",\"value\":\"123456789\"}",
         "originalPreference" -> "Not found",
-        "DataCallType" -> "response",
-        "newPreference" -> "Not found",
-        "reasonOfFailure" -> "Preference not found",
-        "user" -> "me")
+        "DataCallType"       -> "response",
+        "newPreference"      -> "Not found",
+        "reasonOfFailure"    -> "Preference not found",
+        "user"               -> "me"
+      )
     }
 
   }
@@ -275,8 +307,10 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
     def multiplepreferenceDetails(genericPaperless: Boolean, taxCreditsPaperless: Boolean, entityId: EntityId) = {
       val email = if (genericPaperless | taxCreditsPaperless) Some(verifiedEmail) else None
-      List(PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email),
-        PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email))
+      List(
+        PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email),
+        PreferenceDetails(genericPaperless, genericUpdatedAt, taxCreditsPaperless, taxCreditsUpdatedAt, email)
+      )
     }
 
     val optedInPreferenceDetails = preferenceDetails(genericPaperless = true, taxCreditsPaperless = false)
@@ -286,15 +320,41 @@ class SearchServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures wit
 
     val taxIdentifiers = Seq(validSaUtr, validNino)
 
-    val optedInPreference = Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
-      email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers)
-    val optedInPreferenceList = List(Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
-      email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers),
-      Preference(genericPaperless = true, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
-        email = Some(verifiedEmail), taxIdentifiers = taxIdentifiers))
+    val optedInPreference = Preference(
+      genericPaperless = true,
+      genericUpdatedAt = genericUpdatedAt,
+      taxCreditsPaperless = false,
+      taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+      email = Some(verifiedEmail),
+      taxIdentifiers = taxIdentifiers
+    )
+    val optedInPreferenceList = List(
+      Preference(
+        genericPaperless = true,
+        genericUpdatedAt = genericUpdatedAt,
+        taxCreditsPaperless = false,
+        taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+        email = Some(verifiedEmail),
+        taxIdentifiers = taxIdentifiers
+      ),
+      Preference(
+        genericPaperless = true,
+        genericUpdatedAt = genericUpdatedAt,
+        taxCreditsPaperless = false,
+        taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+        email = Some(verifiedEmail),
+        taxIdentifiers = taxIdentifiers
+      )
+    )
 
-    val optedOutPreference = Preference(genericPaperless = false, genericUpdatedAt = genericUpdatedAt, taxCreditsPaperless = false, taxCreditsUpdatedAt = taxCreditsUpdatedAt,
-      email = None, taxIdentifiers = taxIdentifiers)
+    val optedOutPreference = Preference(
+      genericPaperless = false,
+      genericUpdatedAt = genericUpdatedAt,
+      taxCreditsPaperless = false,
+      taxCreditsUpdatedAt = taxCreditsUpdatedAt,
+      email = None,
+      taxIdentifiers = taxIdentifiers
+    )
 
     val config = Configuration.from(Map("appName" -> "preferences-admin-frontend"))
     val searchService = new SearchService(entityResolverConnectorMock, preferencesConnectorMock, auditConnectorMock, config)

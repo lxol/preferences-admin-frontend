@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.google.common.base.Charsets
 import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigException.Missing
 import org.scalatest.mockito.MockitoSugar
-import play.api.{Configuration, Environment, Mode}
+import play.api.{ Configuration, Environment, Mode }
 import uk.gov.hmrc.play.bootstrap.config.RunMode
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User

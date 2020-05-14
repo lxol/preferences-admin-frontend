@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@
 package uk.gov.hmrc.preferencesadminfrontend.services
 
 import org.mockito.Mockito._
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.concurrent.{ IntegrationPatience, ScalaFutures }
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.preferencesadminfrontend.model.{RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult}
+import uk.gov.hmrc.preferencesadminfrontend.model.{ RescindmentAlertsResult, RescindmentRequest, RescindmentUpdateResult }
 import uk.gov.hmrc.preferencesadminfrontend.utils.SpecBase
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -54,11 +54,17 @@ class RescindmentServiceSpec extends UnitSpec with MockitoSugar with ScalaFuture
       emailTemplateId = "rescindedMessageAlert"
     )
     val rescindmentUpdateResult = RescindmentUpdateResult(
-      tried = 1, succeeded = 1, alreadyUpdated = 0, invalidState = 0
+      tried = 1,
+      succeeded = 1,
+      alreadyUpdated = 0,
+      invalidState = 0
     )
     val rescindmentAlertsResult = RescindmentAlertsResult(
-      sent = 1, requeued = 1, failed = 0, hardCopyRequested = 0
+      sent = 1,
+      requeued = 1,
+      failed = 0,
+      hardCopyRequested = 0
     )
-    val rescindmentService = new RescindmentService(messageConnectorMock )
+    val rescindmentService = new RescindmentService(messageConnectorMock)
   }
 }

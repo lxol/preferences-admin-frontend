@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,31 @@
 package uk.gov.hmrc.preferencesadminfrontend.connectors
 
 import akka.actor.ActorSystem
-import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Environment}
+import javax.inject.{ Inject, Singleton }
+import play.api.{ Configuration, Environment }
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 import uk.gov.hmrc.preferencesadminfrontend.services.model.TaxIdentifier
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class PreferencesConnector @Inject()(frontendAuditConnector: DefaultAuditConnector,
-                                     environment: Environment,
-                                     val http: DefaultHttpClient,
-                                     val runModeConfiguration: Configuration,
-                                     val servicesConfig: ServicesConfig,
-                                     val actorSystem: ActorSystem) {
+class PreferencesConnector @Inject()(
+  frontendAuditConnector: DefaultAuditConnector,
+  environment: Environment,
+  val http: DefaultHttpClient,
+  val runModeConfiguration: Configuration,
+  val servicesConfig: ServicesConfig,
+  val actorSystem: ActorSystem) {
 
   implicit val ef = Entity.formats
 
   def serviceUrl = servicesConfig.baseUrl("preferences")
 
-  def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[List[PreferenceDetails]] = {
+  def getPreferenceDetails(taxId: TaxIdentifier)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[List[PreferenceDetails]] =
     http.GET[List[PreferenceDetails]](s"$serviceUrl/preferences/email/${taxId.value}").recover {
       case _: BadRequestException => Nil
     }
-  }
 }

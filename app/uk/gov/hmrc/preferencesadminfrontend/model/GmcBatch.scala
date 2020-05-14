@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,21 @@
 package uk.gov.hmrc.preferencesadminfrontend.model
 
 import play.api.data.Form
-import play.api.data.Forms.{mapping, nonEmptyText,optional,number,text}
-import play.api.libs.json.{Json, OFormat}
+import play.api.data.Forms.{ mapping, nonEmptyText, number, optional, text }
+import play.api.libs.json.{ Json, OFormat }
 
 case class GmcBatch(batchId: String, formId: String, issueDate: String, templateId: String, count: Option[Int])
 
 object GmcBatch {
   implicit val format: OFormat[GmcBatch] = Json.format[GmcBatch]
 
-  def apply():Form[GmcBatch] = Form(
+  def apply(): Form[GmcBatch] = Form(
     mapping(
-      "batchId" -> nonEmptyText,
-      "formId" -> nonEmptyText,
-      "issueDate" -> nonEmptyText,
+      "batchId"    -> nonEmptyText,
+      "formId"     -> nonEmptyText,
+      "issueDate"  -> nonEmptyText,
       "templateId" -> nonEmptyText,
-      "count" -> optional(number)
+      "count"      -> optional(number)
     )(GmcBatch.apply)(GmcBatch.unapply)
   )
 }
-

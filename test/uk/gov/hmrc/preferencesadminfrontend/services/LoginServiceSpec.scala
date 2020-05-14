@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package uk.gov.hmrc.preferencesadminfrontend.services
 
 import org.scalatest.mockito.MockitoSugar
-import play.api.{Configuration, Mode}
+import play.api.{ Configuration, Mode }
 import uk.gov.hmrc.play.bootstrap.config.RunMode
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.preferencesadminfrontend.controllers.model.User
@@ -50,7 +50,7 @@ class LoginServiceSpec extends UnitSpec with MockitoSugar {
   trait TestCase {
 
     val testRunMode = new RunMode(Configuration.empty, Mode.Test)
-    val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], testRunMode){
+    val loginServiceConfiguration = new LoginServiceConfiguration(mock[Configuration], testRunMode) {
       override lazy val authorisedUsers: Seq[User] = Seq(User("username", "password"))
     }
   }
