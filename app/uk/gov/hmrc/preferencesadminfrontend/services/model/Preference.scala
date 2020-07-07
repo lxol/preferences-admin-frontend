@@ -21,6 +21,7 @@ import play.api.libs.json.JodaWrites.{ JodaDateTimeWrites => _ }
 import play.api.libs.json._
 
 case class Preference(
+  entityId: Option[EntityId],
   genericPaperless: Boolean,
   genericUpdatedAt: Option[DateTime],
   taxCreditsPaperless: Boolean,
